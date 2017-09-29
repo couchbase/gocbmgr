@@ -1,4 +1,4 @@
-package couchbase
+package cbmgr
 
 import (
 	"encoding/json"
