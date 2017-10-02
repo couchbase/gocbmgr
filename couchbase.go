@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 type Couchbase struct {
@@ -40,8 +40,6 @@ type Node struct {
 	OTPCookie            string   `json:"otpCookie,omitempty"`
 	OTPNode              string   `json:"otpNode,omitempty"`
 }
-
-var ErrorNodeUninitialized error = fmt.Errorf("Node uninitialized")
 
 type Cluster struct {
 	IsAdminCreds bool   `json:"isAdminCreds,omitempty"`
@@ -467,6 +465,30 @@ func (c *Couchbase) SetupAuth() error {
 	}
 
 	return nil
+}
+
+// wait for node to become ready to accept requests
+func (c *Couchbase) IsReady(hostname string, timeout time.Duration) (bool, error) {
+	interval := time.Tick(1 * time.Second)
+
+	// Keep trying until we're timed out or got a result or got an error
+	for {
+		select {
+		// timed out
+		case <-time.After(timeout):
+			return false, NewErrorWaitNodeTimeout(hostname)
+		case <-interval:
+			_, err := c.Nodes()
+			if ErrCompare(err, ErrorNodeUninitialized) || (err == nil) {
+				// ok, node is ready
+				return true, nil
+			} else {
+				fmt.Println(err)
+			}
+		}
+	}
+
+	return false, NewErrorWaitNodeUnexpected(hostname)
 }
 
 func (c *Couchbase) Initialize(hostname string, services []string, serverGroupName string) error {
