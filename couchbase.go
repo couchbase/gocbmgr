@@ -479,11 +479,11 @@ func (c *Couchbase) IsReady(hostname string, timeout time.Duration) (bool, error
 			return false, NewErrorWaitNodeTimeout(hostname)
 		case <-interval:
 			_, err := c.Nodes()
-			if ErrCompare(err, ErrorNodeUninitialized) || (err == nil) {
+			if err == nil {
 				// ok, node is ready
 				return true, nil
-			} else {
-				fmt.Println(err)
+			} else if ErrCompare(err, ErrorNodeUninitialized) {
+				return true, nil
 			}
 		}
 	}
