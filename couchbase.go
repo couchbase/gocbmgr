@@ -97,12 +97,14 @@ func (c *Couchbase) request(method, path string, body io.Reader, header *http.He
 	url := *c.URL
 	url.Path = path
 	c.Log().Debugf("method=%s url=%s", method, url.String())
-	return requestUrl(url.String(), method, path, body, header)
+	return requestUrl(url.String(), method, path, body, header, 0)
 }
 
 // generic rest request with provided url
-func requestUrl(reqUrl, method, path string, body io.Reader, header *http.Header) (resp *http.Response, err error) {
-	client := &http.Client{}
+func requestUrl(reqUrl, method, path string, body io.Reader, header *http.Header, timeout time.Duration) (resp *http.Response, err error) {
+	client := &http.Client{
+		Timeout: timeout,
+	}
 	req, err := http.NewRequest(method, reqUrl, body)
 	if err != nil {
 		return nil, err
@@ -452,7 +454,7 @@ func (c *Couchbase) UpdateHostname(hostname string) error {
 }
 
 func (c *Couchbase) Ping(rawURL string) error {
-	resp, err := requestUrl(rawURL, "GET", "/", nil, nil)
+	resp, err := requestUrl(rawURL, "GET", "/", nil, nil, 3*time.Second)
 	if err != nil {
 		return err
 	}
