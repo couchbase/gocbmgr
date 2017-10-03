@@ -18,6 +18,11 @@ func NewErrorWaitNodeUnexpected(hostname string) error {
 	return emsg
 }
 
+func NewErrorHealthyTimedOut(url string) error {
+	emsg := fmt.Errorf("timed out waiting for unhealthy node %s", url)
+	return emsg
+}
+
 // Returns true if two errors are equal
 func ErrCompare(e1, e2 error) bool {
 	return strings.Compare(e1.Error(), e2.Error()) == 0

@@ -92,14 +92,18 @@ func strSliceContains(slice []string, item string) bool {
 	return false
 }
 
+// rest request with url from client
 func (c *Couchbase) request(method, path string, body io.Reader, header *http.Header) (resp *http.Response, err error) {
-	client := &http.Client{}
-
 	url := *c.URL
 	url.Path = path
-
-	req, err := http.NewRequest(method, url.String(), body)
 	c.Log().Debugf("method=%s url=%s", method, url.String())
+	return requestUrl(url.String(), method, path, body, header)
+}
+
+// generic rest request with provided url
+func requestUrl(reqUrl, method, path string, body io.Reader, header *http.Header) (resp *http.Response, err error) {
+	client := &http.Client{}
+	req, err := http.NewRequest(method, reqUrl, body)
 	if err != nil {
 		return nil, err
 	}
@@ -283,6 +287,20 @@ func (c *Couchbase) Nodes() (nodes []Node, err error) {
 	return pool.Nodes, nil
 }
 
+func (c *Couchbase) KnownOTPNodes() ([]string, error) {
+	otpNodes := []string{}
+	nodes, err := c.Nodes()
+	if err != nil {
+		return otpNodes, err
+	}
+
+	for _, node := range nodes {
+		otpNodes = append(otpNodes, node.OTPNode)
+	}
+	return otpNodes, nil
+
+}
+
 func (c *Couchbase) getInfo(nodes []Node) (*Node, error) {
 	for _, node := range nodes {
 		if node.ThisNode {
@@ -433,8 +451,8 @@ func (c *Couchbase) UpdateHostname(hostname string) error {
 	return c.CheckStatusCode(resp, []int{200})
 }
 
-func (c *Couchbase) Ping() error {
-	resp, err := c.Request("GET", "/settings/web", nil, nil)
+func (c *Couchbase) Ping(rawURL string) error {
+	resp, err := requestUrl(rawURL, "GET", "/", nil, nil)
 	if err != nil {
 		return err
 	}
@@ -468,7 +486,8 @@ func (c *Couchbase) SetupAuth() error {
 }
 
 // wait for node to become ready to accept requests
-func (c *Couchbase) IsReady(hostname string, timeout time.Duration) (bool, error) {
+func (c *Couchbase) IsReady(rawURL string, timeout time.Duration) (bool, error) {
+
 	interval := time.Tick(1 * time.Second)
 
 	// Keep trying until we're timed out or got a result or got an error
@@ -476,23 +495,28 @@ func (c *Couchbase) IsReady(hostname string, timeout time.Duration) (bool, error
 		select {
 		// timed out
 		case <-time.After(timeout):
-			return false, NewErrorWaitNodeTimeout(hostname)
+			return false, NewErrorWaitNodeTimeout(rawURL)
 		case <-interval:
-			_, err := c.Nodes()
-			if err == nil {
+			if err := c.Ping(rawURL); err == nil {
 				// ok, node is ready
-				return true, nil
-			} else if ErrCompare(err, ErrorNodeUninitialized) {
 				return true, nil
 			}
 		}
 	}
 
-	return false, NewErrorWaitNodeUnexpected(hostname)
+	return false, NewErrorWaitNodeUnexpected(rawURL)
 }
 
-func (c *Couchbase) Initialize(hostname string, services []string, serverGroupName string) error {
+func (c *Couchbase) Initialize(hostname string, services []string, dataQuota int, indexQuota int, searchQuota int) error {
+
+	// TODO: set data + index path
+
 	err := c.UpdateHostname(hostname)
+	if err != nil {
+		return err
+	}
+
+	err = c.UpdateServices(services)
 	if err != nil {
 		return err
 	}
@@ -502,7 +526,8 @@ func (c *Couchbase) Initialize(hostname string, services []string, serverGroupNa
 		return err
 	}
 
-	err = c.UpdateServerGroupName(serverGroupName)
+	// TODO: searchQuota
+	err = c.EnsureMemoryQuota(dataQuota, indexQuota)
 	if err != nil {
 		return err
 	}
@@ -511,11 +536,6 @@ func (c *Couchbase) Initialize(hostname string, services []string, serverGroupNa
 }
 
 func (c *Couchbase) AddNode(nodeName, username, password string, services []string, serverGroup string) error {
-
-	serverGroupURI, err := c.ServerGroupAddNodeURI(serverGroup)
-	if err != nil {
-		return err
-	}
 
 	data := url.Values{}
 	data.Set("hostname", nodeName)
@@ -529,14 +549,36 @@ func (c *Couchbase) AddNode(nodeName, username, password string, services []stri
 		password,
 		strings.Join(services, ","),
 	)
-	resp, err := c.PostForm(serverGroupURI, data)
+	resp, err := c.PostForm("/controller/addNode", data)
 	if err != nil {
 		return err
 	}
 	return c.CheckStatusCode(resp, []int{200})
 }
 
-func (c *Couchbase) Healthy() error {
+// check wether a node is within a cluster and has healthy status
+func (c *Couchbase) Healthy(timeout time.Duration) error {
+	interval := time.Tick(1 * time.Second)
+
+	// Keep trying until we're timed out or got a result or got an error
+	for {
+		select {
+		// timed out
+		case <-time.After(timeout):
+			return NewErrorHealthyTimedOut(c.URL.String())
+		case <-interval:
+			err := c.healthy()
+			if err == nil {
+				// node has joined cluster
+				return nil
+			}
+		}
+	}
+
+	return nil
+}
+
+func (c *Couchbase) healthy() error {
 	nodes, err := c.Nodes()
 	if err != nil {
 		return err
