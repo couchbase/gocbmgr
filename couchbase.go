@@ -657,7 +657,7 @@ func (c *Couchbase) CreateBucketFromSpec(data []byte) error {
 
 func (c *Couchbase) CreateBucket(bucket *Bucket, sync bool) error {
 
-	c.Log().Infof("create bucket %+v", bucket)
+	c.Log().Debugf("create bucket %+v", bucket)
 	data := url.Values{}
 	data.Set("name", bucket.BucketName)
 	data.Set("bucketType", bucket.BucketType)
