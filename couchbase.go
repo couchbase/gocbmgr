@@ -731,6 +731,17 @@ func (c *Couchbase) BucketReady(name string) (bool, error) {
 	return true, nil
 }
 
+func (c *Couchbase) BucketDelete(name string) error {
+	c.Log().Debugf("delete bucket %s", name)
+	path := fmt.Sprintf("/pools/default/buckets/%s", name)
+	resp, err := c.Request("DELETE", path, nil, nil)
+	if err != nil {
+		return NewErrorDeleteBucket(name, err)
+	}
+
+	return c.CheckStatusCode(resp, []int{200})
+}
+
 func BoolToInt(b bool) int {
 	return map[bool]int{false: 0, true: 1}[b]
 }
