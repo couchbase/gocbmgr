@@ -47,6 +47,24 @@ type Cluster struct {
 	UUID         string `json:"uuid,omitempty"`
 }
 
+type Bucket struct {
+	BucketName         string  `json:"name"`
+	BucketType         string  `json:"type"`
+	BucketMemoryQuota  int     `json:"memoryQuota"`
+	BucketReplicas     int     `json:"replicas"`
+	IoPriority         *string `json:"ioPriority"`
+	EvictionPolicy     *string `json:"evictionPolicy"`
+	ConflictResolution *string `json:"conflictResolution"`
+	EnableFlush        *bool   `json:"enableFlush"`
+	EnableIndexReplica *bool   `json:"enableIndexReplica"`
+	BucketPassword     *string `json:"password"`
+}
+
+type BucketStatus struct {
+	Bucket
+	Nodes []Node `json:"nodes,omitempty"`
+}
+
 type Pool struct {
 	Nodes []Node `json:"nodes,omitempty"`
 }
@@ -620,4 +638,103 @@ func (c *Couchbase) healthy() error {
 	}
 
 	return nil
+}
+
+// create bucket from json spec by unmarshalling to
+// native bucket type
+func (c *Couchbase) CreateBucketFromSpec(data []byte) error {
+
+	// parse bucket json spec
+	bucket := Bucket{}
+	if err := json.Unmarshal(data, &bucket); err != nil {
+		return err
+	}
+
+	// create
+	return c.CreateBucket(&bucket, true)
+
+}
+
+func (c *Couchbase) CreateBucket(bucket *Bucket, sync bool) error {
+
+	c.Log().Infof("create bucket %+v", bucket)
+	data := url.Values{}
+	data.Set("name", bucket.BucketName)
+	data.Set("bucketType", bucket.BucketType)
+	data.Set("ramQuotaMB", strconv.Itoa(bucket.BucketMemoryQuota))
+	data.Set("replicaNumber", strconv.Itoa(bucket.BucketReplicas))
+	data.Set("proxyPort", "8091")
+	data.Set("authType", "sasl")
+	if bucket.BucketPassword != nil {
+		data.Set("saslPassword", *bucket.BucketPassword)
+	} else {
+		data.Set("authType", "none")
+	}
+	if bucket.EvictionPolicy != nil {
+		data.Set("evictionPolicy", *bucket.EvictionPolicy)
+	}
+	if bucket.IoPriority != nil {
+		if *bucket.IoPriority == "high" {
+			data.Set("threadsNumber", "8")
+		}
+		if *bucket.IoPriority == "low" {
+			data.Set("threadsNumber", "2")
+		}
+	}
+	if bucket.ConflictResolution != nil {
+		data.Set("conflictResolutionType", *bucket.ConflictResolution)
+	}
+	if bucket.EnableFlush != nil {
+		data.Set("flushEnabled", BoolToStr(*bucket.EnableFlush))
+	}
+	if bucket.EnableIndexReplica != nil {
+		data.Set("replicaIndex", BoolToStr(*bucket.EnableIndexReplica))
+	}
+
+	// post
+	resp, err := c.PostForm("/pools/default/buckets", data)
+	if err != nil {
+		return err
+	}
+	return c.CheckStatusCode(resp, []int{202})
+}
+
+// Check wether bucket is ready
+func (c *Couchbase) BucketReady(name string) (bool, error) {
+
+	// get bucket info
+	resp, err := c.request("GET", "/pools/default/buckets/"+name, nil, nil)
+	defer resp.Body.Close()
+
+	if (err != nil) || (resp.StatusCode != 200) {
+		return false, err
+	}
+
+	// convert to status
+	body, err := ioutil.ReadAll(resp.Body)
+	status := BucketStatus{}
+	if err = json.Unmarshal(body, &status); err != nil {
+		return false, err
+	}
+
+	// check bucket health on all nodes
+	if len(status.Nodes) == 0 {
+		return false, nil
+	}
+	for _, node := range status.Nodes {
+		if node.Status != "healthy" {
+			// bucket still creating on node
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func BoolToInt(b bool) int {
+	return map[bool]int{false: 0, true: 1}[b]
+}
+
+func BoolToStr(b bool) string {
+	return strconv.Itoa(BoolToInt(b))
 }
