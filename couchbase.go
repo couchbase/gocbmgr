@@ -103,11 +103,15 @@ func (c *Couchbase) Request(method, path string, body []byte, header *http.Heade
 
 func strSliceContains(slice []string, item string) bool {
 	for _, elem := range slice {
-		if item == elem {
+		if stripPort(item) == stripPort(elem) {
 			return true
 		}
 	}
 	return false
+}
+
+func stripPort(str string) string {
+	return strings.Split(str, ":")[0]
 }
 
 // rest request with url from client
@@ -231,7 +235,6 @@ func (c *Couchbase) GetOTPNodes(ejectNodes, failoverNode, reAddNode []string) (o
 			return
 		}
 		outAllNodes = append(outAllNodes, node.OTPNode)
-
 		if strSliceContains(ejectNodes, node.Hostname) {
 			outEjectNodes = append(outEjectNodes, node.OTPNode)
 		}
