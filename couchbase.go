@@ -81,21 +81,13 @@ func New(rawURL string) (*Couchbase, error) {
 
 func (c *Couchbase) Request(method, path string, body []byte, header *http.Header) (resp *http.Response, err error) {
 
+	c.URL.User = url.UserPassword(c.Username, c.Password)
 	resp, err = c.request(method, path, bytes.NewReader(body), header)
 	if err != nil {
-		return nil, fmt.Errorf("Error while connecting: %s", err)
+		return nil, fmt.Errorf("Error while connecting with auth: %s", err)
 	}
-
-	// connect with auth
 	if resp.StatusCode == 401 {
-		c.URL.User = url.UserPassword(c.Username, c.Password)
-		resp, err = c.request(method, path, bytes.NewReader(body), header)
-		if err != nil {
-			return nil, fmt.Errorf("Error while connecting with auth: %s", err)
-		}
-		if resp.StatusCode == 401 {
-			return nil, fmt.Errorf("Error authenticating. Check user/password")
-		}
+		return nil, fmt.Errorf("Error authenticating. Check user/password")
 	}
 
 	return resp, nil
