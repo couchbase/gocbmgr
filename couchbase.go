@@ -353,42 +353,6 @@ func (c *Couchbase) Port() uint16 {
 	return uint16(port)
 }
 
-func (c *Couchbase) UpdateServices(services []string) error {
-	c.Log().Debugf("update services to '%+v'", services)
-	data := url.Values{}
-	data.Set("services", strings.Join(services, ","))
-	resp, err := c.PostForm("/node/controller/setupServices", data)
-	if err != nil {
-		return err
-	}
-	return c.CheckStatusCode(resp, []int{200})
-}
-
-func (c *Couchbase) EnsureMemoryQuota(dataQuota int, indexQuota int) error {
-	info, err := c.Info()
-	if err != nil {
-		return err
-	}
-
-	if info.MemoryQuota != dataQuota {
-		err := c.updateMemoryQuota("memoryQuota", dataQuota)
-		if err != nil {
-			return err
-		}
-		c.info = nil
-	}
-
-	if info.IndexMemoryQuota != indexQuota {
-		err := c.updateMemoryQuota("indexMemoryQuota", indexQuota)
-		if err != nil {
-			return err
-		}
-		c.info = nil
-	}
-
-	return nil
-}
-
 func (c *Couchbase) ClusterID() (string, error) {
 	cluster, err := c.Cluster()
 	if err != nil {
@@ -474,32 +438,6 @@ func (c *Couchbase) Ping(rawURL string) error {
 	return c.CheckStatusCode(resp, []int{200})
 }
 
-func (c *Couchbase) SetupAuth() error {
-	resp, err := c.Request("GET", "/settings/web", nil, nil)
-	if err != nil {
-		return fmt.Errorf("Error while checking login: %s", err)
-	}
-
-	if resp.StatusCode == 200 {
-		data := url.Values{}
-		data.Set("username", c.Username)
-		data.Set("password", c.Password)
-		data.Set("port", fmt.Sprintf("%d", c.Port()))
-		resp, err := c.PostForm("/settings/web", data)
-		if err != nil {
-			return err
-		}
-		err = c.CheckStatusCode(resp, []int{200})
-		if err != nil {
-			return err
-		}
-	} else if resp.StatusCode != 401 {
-		return fmt.Errorf("Expected couchbase to respond with either 401 or 200")
-	}
-
-	return nil
-}
-
 // wait for node to become ready to accept requests
 func (c *Couchbase) IsReady(rawURL string, timeout time.Duration) (bool, error) {
 
@@ -520,34 +458,6 @@ func (c *Couchbase) IsReady(rawURL string, timeout time.Duration) (bool, error) 
 	}
 
 	return false, NewErrorWaitNodeUnexpected(rawURL)
-}
-
-func (c *Couchbase) Initialize(hostname string, services []string, dataQuota int, indexQuota int, searchQuota int) error {
-
-	// TODO: set data + index path
-
-	err := c.UpdateHostname(hostname)
-	if err != nil {
-		return err
-	}
-
-	err = c.UpdateServices(services)
-	if err != nil {
-		return err
-	}
-
-	err = c.SetupAuth()
-	if err != nil {
-		return err
-	}
-
-	// TODO: searchQuota
-	err = c.EnsureMemoryQuota(dataQuota, indexQuota)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Add node with retry for robustness as
