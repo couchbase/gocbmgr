@@ -18,6 +18,27 @@ func (c *Couchbase) setPoolsDefault(name string, dataMemQuotaMB, indexMemQuotaMB
 	return c.n_post("/pools/default", []byte(data.Encode()), headers)
 }
 
+func (c *Couchbase) setStoragePaths(dataPath, indexPath string) error {
+	data := url.Values{}
+	data.Set("path", dataPath)
+	data.Set("indexPath", indexPath)
+
+	headers := c.defaultHeaders()
+	headers.Set("Content-Type", ContentTypeUrlEncoded)
+
+	return c.n_post("/nodes/self/controller/settings", []byte(data.Encode()), headers)
+}
+
+func (c *Couchbase) setHostname(hostname string) error {
+	data := url.Values{}
+	data.Set("hostname", hostname)
+
+	headers := c.defaultHeaders()
+	headers.Set("Content-Type", ContentTypeUrlEncoded)
+
+	return c.n_post("/node/controller/rename", []byte(data.Encode()), headers)
+}
+
 func (c *Couchbase) getIndexSettings() (*IndexSettings, error) {
 	settings := &IndexSettings{}
 	err := c.n_get("/settings/indexes", settings, c.defaultHeaders())

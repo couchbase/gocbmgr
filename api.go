@@ -27,3 +27,15 @@ func (c *Couchbase) ClusterInitialize(username, password, name string, dataMemQu
 
 	return nil
 }
+
+func (c *Couchbase) NodeInitialize(hostname, dataPath, indexPath string) error {
+	if err := c.setHostname(hostname); err != nil {
+		return err
+	}
+
+	if err := c.setStoragePaths(dataPath, indexPath); err != nil {
+		return err
+	}
+
+	return nil
+}

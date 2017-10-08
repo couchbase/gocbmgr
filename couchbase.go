@@ -419,17 +419,6 @@ func (c *Couchbase) Log() *logrus.Entry {
 	return logrus.WithField("component", "couchbase")
 }
 
-func (c *Couchbase) UpdateHostname(hostname string) error {
-	c.Log().Debugf("update hostname to '%s'", hostname)
-	data := url.Values{}
-	data.Set("hostname", hostname)
-	resp, err := c.PostForm("/node/controller/rename", data)
-	if err != nil {
-		return err
-	}
-	return c.CheckStatusCode(resp, []int{200})
-}
-
 func (c *Couchbase) Ping(rawURL string) error {
 	resp, err := requestUrl(rawURL, "GET", "/", nil, nil, 3*time.Second)
 	if err != nil {
