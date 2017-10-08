@@ -5,6 +5,19 @@ import (
 	"strconv"
 )
 
+func (c *Couchbase) addNode(hostname, username, password string, services ServiceList) error {
+	data := url.Values{}
+	data.Set("hostname", hostname)
+	data.Set("user", username)
+	data.Set("password", password)
+	data.Set("services", services.String())
+
+	headers := c.defaultHeaders()
+	headers.Set("Content-Type", ContentTypeUrlEncoded)
+
+	return c.n_post("/controller/addNode", []byte(data.Encode()), headers)
+}
+
 func (c *Couchbase) setPoolsDefault(name string, dataMemQuotaMB, indexMemQuotaMB, searchMemQuotaMB int) error {
 	data := url.Values{}
 	data.Set("memoryQuota", strconv.Itoa(dataMemQuotaMB))

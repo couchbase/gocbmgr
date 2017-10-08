@@ -449,46 +449,6 @@ func (c *Couchbase) IsReady(rawURL string, timeout time.Duration) (bool, error) 
 	return false, NewErrorWaitNodeUnexpected(rawURL)
 }
 
-// Add node with retry for robustness as
-// join sometimes fails due to non server errors
-// such as client EOF
-func (c *Couchbase) RetryableAddNode(nodeName, username, password string, services []string, serverGroup string, tries int) error {
-	var err error
-	for i := 0; i < tries; i++ {
-		err = c.AddNode(nodeName, username, password, services, serverGroup)
-		if err == nil {
-			return nil
-		} else {
-			// log error as warning
-			c.Log().Warnf("attempt to add node failed...retrying %s", err)
-		}
-
-		time.Sleep(1 * time.Second)
-	}
-	return err
-}
-
-func (c *Couchbase) AddNode(nodeName, username, password string, services []string, serverGroup string) error {
-
-	data := url.Values{}
-	data.Set("hostname", nodeName)
-	data.Set("user", username)
-	data.Set("password", password)
-	data.Set("services", strings.Join(services, ","))
-	c.Log().Debugf(
-		"adding node hostname='%s' username='%s' password='%s' services='%s'",
-		nodeName,
-		username,
-		password,
-		strings.Join(services, ","),
-	)
-	resp, err := c.PostForm("/controller/addNode", data)
-	if err != nil {
-		return err
-	}
-	return c.CheckStatusCode(resp, []int{200})
-}
-
 // check wether a node is within a cluster and has healthy status
 func (c *Couchbase) Healthy(timeout time.Duration) error {
 	interval := time.Tick(1 * time.Second)

@@ -1,5 +1,9 @@
 package cbmgr
 
+func (c *Couchbase) AddNode(hostname, username, password string, services ServiceList) error {
+	return c.addNode(hostname, username, password, services)
+}
+
 func (c *Couchbase) ClusterInitialize(username, password, name string, dataMemQuotaMB, indexMemQuotaMB,
 	searchMemQuotaMB, port int, services []ServiceName, mode IndexStorageMode) error {
 
