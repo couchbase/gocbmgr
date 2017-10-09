@@ -65,6 +65,16 @@ func (s ServiceList) String() string {
 	return strings.Join(strs, ",")
 }
 
+type ClusterInfo struct {
+	SearchMemoryQuotaMB int        `json:"ftsMemoryQuota"`
+	IndexMemoryQuotaMB  int        `json:"indexMemoryQuota"`
+	DataMemoryQuotaMB   int        `json:"memoryQuota"`
+	Nodes               []NodeInfo `json:"nodes"`
+	RebalanceStatus     string     `json:"rebalanceStatus"`
+	ClusterName         string     `json:"clusterName"`
+	Balanced            bool       `json:"balanced"`
+}
+
 type IndexSettings struct {
 	StorageMode        IndexStorageMode `json:"storageMode"`
 	Threads            int              `json:"indexerThreads"`
@@ -72,6 +82,17 @@ type IndexSettings struct {
 	StableSnapInterval int              `json:"stableSnapshotInterval"`
 	MaxRollbackPoints  int              `json:"maxRollbackPoints"`
 	LogLevel           IndexLogLevel    `json:"logLevel"`
+}
+
+type NodeInfo struct {
+	ThisNode     bool     `json:"thisNode"`
+	Uptime       string   `json:"uptime"`
+	Membership   string   `json:"clusterMembership"`
+	RecoveryType string   `json:"recoveryType"`
+	Status       string   `json:"status"`
+	OTPNode      string   `json:"otpNode"`
+	HostName     string   `json:"hostname"`
+	Services     []string `json:"services"`
 }
 
 type IoPriorityType string

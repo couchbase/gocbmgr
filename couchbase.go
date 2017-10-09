@@ -121,102 +121,6 @@ func (c *Couchbase) PostForm(path string, data url.Values) (resp *http.Response,
 	return c.Form("POST", path, data)
 }
 
-func (c *Couchbase) RemoveNodes(removeNodes []string) error {
-	ejectNodes, _, _, allNodes, err := c.GetOTPNodes(removeNodes, []string{}, []string{})
-	if err != nil {
-		return err
-	}
-
-	if len(ejectNodes) != len(removeNodes) {
-		return fmt.Errorf("Some nodes specified to be removed are not part of the cluster")
-	}
-
-	err = c.Rebalance(allNodes, ejectNodes)
-	if err != nil {
-		return err
-	}
-
-	var minSleep = time.Second * 2
-	var sleep time.Duration = 0
-	var nodeInClusterCount = 0
-	for {
-		time.Sleep(sleep)
-
-		status, err := c.RebalanceStatus()
-		if err != nil {
-			sleep = 500 * time.Millisecond
-			c.Log().Warnf("Error while checking rebalance status: %s", err)
-			continue
-		}
-		sleep = time.Duration(int64(status.RecommendedRefreshPeriod * float64(time.Second)))
-		if sleep < minSleep {
-			sleep = minSleep
-		}
-
-		nodeInRebalance := false
-		for _, node := range ejectNodes {
-			if strSliceContains(status.Nodes, node) {
-				nodeInRebalance = true
-			}
-		}
-
-		if nodeInRebalance {
-			nodeInClusterCount = 0
-			continue
-		}
-
-		nodes, err := c.Nodes()
-		if err != nil {
-			c.Log().Warnf("Error while getting nodes: %s", err)
-			continue
-		}
-
-		nodeInCluster := false
-		for _, node := range nodes {
-			if strSliceContains(ejectNodes, node.OTPNode) {
-				nodeInCluster = true
-			}
-		}
-
-		if nodeInCluster {
-			if nodeInClusterCount > 10 {
-				// better handling would probably be to prevent further scaling down / pod termination
-				c.Log().Fatalf("rebalance finished, but node is still in the cluster. Rebalance failed")
-				break
-			}
-			nodeInClusterCount++
-			continue
-		}
-
-		c.Log().Infof("rebalance finished")
-		break
-	}
-
-	return nil
-
-}
-
-func (c *Couchbase) GetOTPNodes(ejectNodes, failoverNode, reAddNode []string) (outEjectNodes, outFailoverNodes, outReAddNodes, outAllNodes []string, err error) {
-
-	nodes, err := c.Nodes()
-	if err != nil {
-		return
-	}
-
-	for _, node := range nodes {
-		if node.OTPNode == "" {
-			err = fmt.Errorf("Unable to get OTP name for %+v", node)
-			return
-		}
-		outAllNodes = append(outAllNodes, node.OTPNode)
-		if strSliceContains(ejectNodes, node.Hostname) {
-			outEjectNodes = append(outEjectNodes, node.OTPNode)
-		}
-	}
-
-	return outEjectNodes, outFailoverNodes, outReAddNodes, outAllNodes, nil
-}
-
 func (c *Couchbase) CheckStatusCode(resp *http.Response, validStatusCodes []int) error {
 	validStatusCodesString := make([]string, len(validStatusCodes))
 
@@ -284,20 +188,6 @@ func (c *Couchbase) Nodes() (nodes []Node, err error) {
 	return pool.Nodes, nil
 }
 
-func (c *Couchbase) KnownOTPNodes() ([]string, error) {
-	otpNodes := []string{}
-	nodes, err := c.Nodes()
-	if err != nil {
-		return otpNodes, err
-	}
-
-	for _, node := range nodes {
-		otpNodes = append(otpNodes, node.OTPNode)
-	}
-	return otpNodes, nil
-
-}
-
 func (c *Couchbase) getInfo(nodes []Node) (*Node, error) {
 	for _, node := range nodes {
 		if node.ThisNode {
@@ -341,18 +231,6 @@ func (c *Couchbase) ClusterID() (string, error) {
 		return "", err
 	}
 	return cluster.UUID, nil
-}
-
-func (c *Couchbase) Rebalance(knownNodes, ejectedNodes []string) error {
-	c.Log().Debugf("rebalance nodes ejected=%+v known=%+v", ejectedNodes, knownNodes)
-	data := url.Values{}
-	data.Set("ejectedNodes", strings.Join(ejectedNodes, ","))
-	data.Set("knownNodes", strings.Join(knownNodes, ","))
-	resp, err := c.PostForm("/controller/rebalance", data)
-	if err != nil {
-		return err
-	}
-	return c.CheckStatusCode(resp, []int{200})
 }
 
 func (c *Couchbase) Cluster() (*Cluster, error) {

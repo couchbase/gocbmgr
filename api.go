@@ -44,6 +44,26 @@ func (c *Couchbase) NodeInitialize(hostname, dataPath, indexPath string) error {
 	return nil
 }
 
+func (c *Couchbase) Rebalance(nodesToRemove []string) error {
+	cluster, err := c.getPoolsDefault()
+	if err != nil {
+		return err
+	}
+
+	all := []string{}
+	eject := []string{}
+	for _, node := range cluster.Nodes {
+		all = append(all, node.OTPNode)
+		for _, toRemove := range nodesToRemove {
+			if node.HostName == toRemove {
+				eject = append(eject, node.OTPNode)
+			}
+		}
+	}
+
+	return c.rebalance(all, eject)
+}
+
 func (c *Couchbase) CreateBucket(bucket *Bucket) error {
 	return c.createBucket(bucket)
 }

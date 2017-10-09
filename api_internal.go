@@ -3,6 +3,7 @@ package cbmgr
 import (
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 func (c *Couchbase) addNode(hostname, username, password string, services ServiceList) error {
@@ -16,6 +17,27 @@ func (c *Couchbase) addNode(hostname, username, password string, services Servic
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
 	return c.n_post("/controller/addNode", []byte(data.Encode()), headers)
+}
+
+func (c *Couchbase) getPoolsDefault() (*ClusterInfo, error) {
+	clusterInfo := &ClusterInfo{}
+	err := c.n_get("/pools/default", clusterInfo, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+
+	return clusterInfo, nil
+}
+
+func (c *Couchbase) rebalance(allNodes, ejectNodes []string) error {
+	data := url.Values{}
+	data.Set("ejectedNodes", strings.Join(ejectNodes, ","))
+	data.Set("knownNodes", strings.Join(allNodes, ","))
+
+	headers := c.defaultHeaders()
+	headers.Set("Content-Type", ContentTypeUrlEncoded)
+
+	return c.n_post("/controller/rebalance", []byte(data.Encode()), headers)
 }
 
 func (c *Couchbase) setPoolsDefault(name string, dataMemQuotaMB, indexMemQuotaMB, searchMemQuotaMB int) error {
