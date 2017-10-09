@@ -4,6 +4,10 @@ func (c *Couchbase) AddNode(hostname, username, password string, services Servic
 	return c.addNode(hostname, username, password, services)
 }
 
+func (c *Couchbase) ClusterInfo() (*ClusterInfo, error) {
+	return c.getPoolsDefault()
+}
+
 func (c *Couchbase) ClusterInitialize(username, password, name string, dataMemQuotaMB, indexMemQuotaMB,
 	searchMemQuotaMB, port int, services []ServiceName, mode IndexStorageMode) error {
 

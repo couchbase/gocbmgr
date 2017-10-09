@@ -149,11 +149,6 @@ func (c *Couchbase) CheckStatusCode(resp *http.Response, validStatusCodes []int)
 	)
 }
 
-func (c *Couchbase) Connect() error {
-	_, err := c.Info()
-	return err
-}
-
 func (c *Couchbase) Nodes() (nodes []Node, err error) {
 	// connect without auth
 	c.Log().Debugf("getting node information")
@@ -195,21 +190,6 @@ func (c *Couchbase) getInfo(nodes []Node) (*Node, error) {
 		}
 	}
 	return nil, fmt.Errorf("No node info found")
-}
-
-func (c *Couchbase) Info() (*Node, error) {
-	if c.info == nil {
-		nodes, err := c.Nodes()
-		if err != nil {
-			return nil, err
-		}
-		info, err := c.getInfo(nodes)
-		if err != nil {
-			return nil, err
-		}
-		c.info = info
-	}
-	return c.info, nil
 }
 
 func (c *Couchbase) Port() uint16 {
