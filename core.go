@@ -113,7 +113,6 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 			return CouchbaseError{response.StatusCode, "", clientError, map[string]string{"body": err.Error()}}
 		}
 
-		response.Body.Close()
 		return CouchbaseError{response.StatusCode, "", serverError, data.Errors}
 	} else if response.StatusCode == http.StatusUnauthorized {
 		return CouchbaseError{response.StatusCode, "", serverError, map[string]string{"auth": "Invalid username and password"}}	
@@ -132,7 +131,6 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 			return CouchbaseError{response.StatusCode, "", clientError, map[string]string{"body": err.Error()}}
 		}
 
-		response.Body.Close()
 		msg := data.Message + ": " + strings.Join(data.Permissions, ", ")
 		return CouchbaseError{response.StatusCode, "", serverError, map[string]string{"permissions": msg}}
 	} else {
