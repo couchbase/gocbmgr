@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -101,19 +102,31 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 		return nil
 	} else if response.StatusCode == http.StatusBadRequest {
 		defer response.Body.Close()
-		type overlay struct {
+		data, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			return CouchbaseError{response.StatusCode, "", clientError, map[string]string{"response": err.Error()}}
+		}
+
+		type errMapoverlay struct {
 			Errors     map[string]string
 		}
 
-		var data overlay
-		decoder := json.NewDecoder(response.Body)
+		var errMapData errMapoverlay
+		decoder := json.NewDecoder(bytes.NewReader(data))
 		decoder.UseNumber()
-		err := decoder.Decode(&data)
-		if err != nil {
-			return CouchbaseError{response.StatusCode, "", clientError, map[string]string{"body": err.Error()}}
+		err = decoder.Decode(&errMapData)
+		if err == nil {
+			return CouchbaseError{response.StatusCode, "", serverError, errMapData.Errors}
 		}
 
-		return CouchbaseError{response.StatusCode, "", serverError, data.Errors}
+		var listData []string
+		decoder = json.NewDecoder(bytes.NewReader(data))
+		err = decoder.Decode(&listData)
+		if err == nil {
+			return CouchbaseError{response.StatusCode, "", serverError, map[string]string{"error": listData[0]}}
+		}
+
+		return CouchbaseError{response.StatusCode, "", clientError, map[string]string{"body": "Error processing response"}}
 	} else if response.StatusCode == http.StatusUnauthorized {
 		return CouchbaseError{response.StatusCode, "", serverError, map[string]string{"auth": "Invalid username and password"}}	
 	} else if response.StatusCode == http.StatusForbidden {
