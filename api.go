@@ -43,3 +43,7 @@ func (c *Couchbase) NodeInitialize(hostname, dataPath, indexPath string) error {
 
 	return nil
 }
+
+func (c *Couchbase) CreateBucket(bucket *Bucket) error {
+	return c.createBucket(bucket)
+}

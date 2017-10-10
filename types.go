@@ -32,7 +32,7 @@ type ServiceName string
 const (
 	DataService   ServiceName = "kv"
 	IndexService  ServiceName = "index"
-	QueryService ServiceName  = "n1ql"
+	QueryService  ServiceName = "n1ql"
 	SearchService ServiceName = "fts"
 )
 
@@ -72,4 +72,32 @@ type IndexSettings struct {
 	StableSnapInterval int              `json:"stableSnapshotInterval"`
 	MaxRollbackPoints  int              `json:"maxRollbackPoints"`
 	LogLevel           IndexLogLevel    `json:"logLevel"`
+}
+
+type IoPriorityType string
+type IoPriorityThreadCount int
+
+const (
+	IoPriorityTypeLow         IoPriorityType        = "low"
+	IoPriorityTypeHigh        IoPriorityType        = "high"
+	IoPriorityThreadCountLow  IoPriorityThreadCount = 2
+	IoPriorityThreadCountHigh IoPriorityThreadCount = 8
+)
+
+type Bucket struct {
+	BucketName         string          `json:"name"`
+	BucketType         string          `json:"type"`
+	BucketMemoryQuota  int             `json:"memoryQuota"`
+	BucketReplicas     int             `json:"replicas"`
+	IoPriority         *IoPriorityType `json:"ioPriority"`
+	EvictionPolicy     *string         `json:"evictionPolicy"`
+	ConflictResolution *string         `json:"conflictResolution"`
+	EnableFlush        *bool           `json:"enableFlush"`
+	EnableIndexReplica *bool           `json:"enableIndexReplica"`
+	BucketPassword     *string         `json:"password"`
+}
+
+type BucketStatus struct {
+	Bucket
+	Nodes []Node `json:"nodes,omitempty"`
 }
