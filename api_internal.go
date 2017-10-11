@@ -167,3 +167,21 @@ func (c *Couchbase) createBucket(bucket *Bucket) error {
 
 	return c.n_post("/pools/default/buckets", []byte(data.Encode()), headers)
 }
+
+func (c *Couchbase) deleteBucket(name string) error {
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	path := "/pools/default/buckets/" + name
+	return c.n_delete(path, headers)
+}
+
+func (c *Couchbase) getBucketStatus(name string) (*BucketStatus, error) {
+	status := &BucketStatus{}
+	path := "/pools/default/buckets/" + name
+	err := c.n_get(path, status, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+	return status, nil
+}

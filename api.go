@@ -83,3 +83,29 @@ func (c *Couchbase) Rebalance(nodesToRemove []string) error {
 func (c *Couchbase) CreateBucket(bucket *Bucket) error {
 	return c.createBucket(bucket)
 }
+
+func (c *Couchbase) DeleteBucket(name string) error {
+	return c.deleteBucket(name)
+}
+
+// Determine wether bucket is ready based on status resolving
+// to healthy across all nodes
+func (c *Couchbase) BucketReady(name string) (bool, error) {
+
+	status, err := c.getBucketStatus(name)
+	if err != nil {
+		return false, err
+	}
+
+	// check bucket health on all nodes
+	if len(status.Nodes) == 0 {
+		return false, nil
+	}
+	for _, node := range status.Nodes {
+		if node.Status != "healthy" {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}

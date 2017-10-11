@@ -48,14 +48,14 @@ func (e CouchbaseError) ServerError() bool {
 func (e CouchbaseError) Error() string {
 	all := []string{}
 	for k, v := range e.errors {
-		all = append(all, k + " - " + v)
+		all = append(all, k+" - "+v)
 	}
 
 	return fmt.Sprintf("Code: %d, Error: %v", e.httpcode, strings.Join(all, ","))
 }
 
 func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) error {
-	req, err := http.NewRequest("GET", c.URL.String() + path, nil)
+	req, err := http.NewRequest("GET", c.URL.String()+path, nil)
 	if err != nil {
 		return CouchbaseError{0, path, clientError, map[string]string{"request_creation": err.Error()}}
 	}
@@ -72,7 +72,23 @@ func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) 
 }
 
 func (c *Couchbase) n_post(path string, data []byte, headers http.Header) error {
-	req, err := http.NewRequest("POST", c.URL.String() + path, bytes.NewBuffer(data))
+	req, err := http.NewRequest("POST", c.URL.String()+path, bytes.NewBuffer(data))
+	if err != nil {
+		return CouchbaseError{0, path, clientError, map[string]string{"request_creation": err.Error()}}
+	}
+	req.Header = headers
+
+	client := http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		return CouchbaseError{0, path, networkError, map[string]string{"send": err.Error()}}
+	}
+
+	return c.n_handleResponse(response, nil)
+}
+
+func (c *Couchbase) n_delete(path string, headers http.Header) error {
+	req, err := http.NewRequest("DELETE", c.URL.String()+path, nil)
 	if err != nil {
 		return CouchbaseError{0, path, clientError, map[string]string{"request_creation": err.Error()}}
 	}
@@ -108,7 +124,7 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 		}
 
 		type errMapoverlay struct {
-			Errors     map[string]string
+			Errors map[string]string
 		}
 
 		var errMapData errMapoverlay
@@ -128,7 +144,7 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 
 		return CouchbaseError{response.StatusCode, "", clientError, map[string]string{"body": "Error processing response"}}
 	} else if response.StatusCode == http.StatusUnauthorized {
-		return CouchbaseError{response.StatusCode, "", serverError, map[string]string{"auth": "Invalid username and password"}}	
+		return CouchbaseError{response.StatusCode, "", serverError, map[string]string{"auth": "Invalid username and password"}}
 	} else if response.StatusCode == http.StatusForbidden {
 		defer response.Body.Close()
 		type overlay struct {
@@ -152,7 +168,7 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 }
 
 func (c *Couchbase) defaultHeaders() http.Header {
-	auth := "Basic "+base64.StdEncoding.EncodeToString([]byte(c.Username + ":" + c.Password))
+	auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password))
 
 	headers := http.Header{}
 	headers.Set(HeaderAuthorization, auth)
