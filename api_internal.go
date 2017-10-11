@@ -185,3 +185,13 @@ func (c *Couchbase) getBucketStatus(name string) (*BucketStatus, error) {
 	}
 	return status, nil
 }
+
+func (c *Couchbase) getBuckets() ([]*Bucket, error) {
+	buckets := []*Bucket{}
+	path := "/pools/default/buckets/"
+	err := c.n_get(path, &buckets, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+	return buckets, nil
+}

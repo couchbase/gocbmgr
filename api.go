@@ -109,3 +109,7 @@ func (c *Couchbase) BucketReady(name string) (bool, error) {
 
 	return true, nil
 }
+
+func (c *Couchbase) GetBuckets() ([]*Bucket, error) {
+	return c.getBuckets()
+}
