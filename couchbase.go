@@ -20,7 +20,6 @@ type Couchbase struct {
 	Username string
 	Password string
 	info     *Node
-	cluster  *Cluster
 }
 
 type Node struct {
@@ -39,12 +38,6 @@ type Node struct {
 	RebalanceStatus      string   `json:"rebalanceStatus,omitempty"`
 	OTPCookie            string   `json:"otpCookie,omitempty"`
 	OTPNode              string   `json:"otpNode,omitempty"`
-}
-
-type Cluster struct {
-	IsAdminCreds bool   `json:"isAdminCreds,omitempty"`
-	IsEnterprise bool   `json:"isEnterprise,omitempty"`
-	UUID         string `json:"uuid,omitempty"`
 }
 
 type Pool struct {
@@ -203,45 +196,6 @@ func (c *Couchbase) Port() uint16 {
 		return uint16(80)
 	}
 	return uint16(port)
-}
-
-func (c *Couchbase) ClusterID() (string, error) {
-	cluster, err := c.Cluster()
-	if err != nil {
-		return "", err
-	}
-	return cluster.UUID, nil
-}
-
-func (c *Couchbase) Cluster() (*Cluster, error) {
-	if c.cluster == nil {
-		resp, err := c.Request("GET", "/pools", nil, nil)
-		if err != nil {
-			return nil, fmt.Errorf("Error while connecting: %s", err)
-		}
-
-		err = c.CheckStatusCode(resp, []int{200})
-		if err != nil {
-			return nil, err
-		}
-
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-
-		// parse json
-		cluster := Cluster{}
-		err = json.Unmarshal(body, &cluster)
-		if err != nil {
-			return nil, err
-		}
-		c.cluster = &cluster
-	}
-
-	return c.cluster, nil
-
 }
 
 func (c *Couchbase) updateMemoryQuota(key string, quota int) error {

@@ -19,6 +19,16 @@ func (c *Couchbase) addNode(hostname, username, password string, services Servic
 	return c.n_post("/controller/addNode", []byte(data.Encode()), headers)
 }
 
+func (c *Couchbase) getPools() (*PoolsInfo, error) {
+	info := &PoolsInfo{}
+	err := c.n_get("/pools", info, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+
+	return info, nil
+}
+
 func (c *Couchbase) getPoolsDefault() (*ClusterInfo, error) {
 	clusterInfo := &ClusterInfo{}
 	err := c.n_get("/pools/default", clusterInfo, c.defaultHeaders())

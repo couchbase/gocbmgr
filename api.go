@@ -36,6 +36,18 @@ func (c *Couchbase) ClusterInitialize(username, password, name string, dataMemQu
 	return nil
 }
 
+func (c *Couchbase) ClusterUUID() (string, error) {
+	if info, err := c.getPools(); err != nil {
+		return "", err
+	} else {
+		if uuid, ok := info.UUID.(string); ok {
+			return uuid, nil
+		}
+
+		return "", nil
+	}
+}
+
 func (c *Couchbase) NodeInitialize(hostname, dataPath, indexPath string) error {
 	if err := c.setHostname(hostname); err != nil {
 		return err

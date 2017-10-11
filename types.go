@@ -95,6 +95,11 @@ type NodeInfo struct {
 	Services     []string `json:"services"`
 }
 
+type PoolsInfo struct {
+	Enterprise bool        `json:"isEnterprise"`
+	UUID       interface{} `json:"uuid"`
+}
+
 type IoPriorityType string
 type IoPriorityThreadCount int
 
