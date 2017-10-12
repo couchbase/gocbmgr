@@ -5,6 +5,12 @@ import (
 	"strings"
 )
 
+const (
+	RebalanceStatusNotRunning string = "notRunning"
+	RebalanceStatusRunning    string = "running"
+	RebalanceStatusStale      string = "stale"
+)
+
 type IndexStorageMode string
 
 const (
@@ -98,6 +104,12 @@ type NodeInfo struct {
 type PoolsInfo struct {
 	Enterprise bool        `json:"isEnterprise"`
 	UUID       interface{} `json:"uuid"`
+}
+
+type Task struct {
+	Progress float64 `json:"progress"`
+	Type     string  `json:"type"`
+	Status   string  `json:"status"`
 }
 
 type IoPriorityType string

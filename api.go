@@ -1,5 +1,54 @@
 package cbmgr
 
+import (
+	"time"
+	"sync/atomic"
+	"unsafe"
+
+	"github.com/sirupsen/logrus"
+)
+
+type RebalanceProgress struct {
+	client    *Couchbase
+	cancelled *atomicBool
+	logger    *logrus.Entry
+	interval  time.Duration
+}
+
+func (r *RebalanceProgress) Wait() error {
+	isRunning := true
+	for isRunning && !r.cancelled.Load() {
+		tasks, err := r.client.getTasks()
+		if err != nil {
+			return err
+		}
+
+		for _, task := range tasks {
+			if task.Type == "rebalance" {
+				if task.Status == RebalanceStatusNotRunning || task.Status == RebalanceStatusStale {
+					isRunning = false
+				} else if task.Status == RebalanceStatusRunning {
+					logger := (*logrus.Entry)(atomic.LoadPointer((*unsafe.Pointer)((unsafe.Pointer)(&r.logger))))
+					if logger != nil {
+						logger.Infof("Rebalance progress: %f", task.Progress)
+					}
+				}
+			}
+		}
+		time.Sleep(r.interval)
+	}
+
+	return nil
+}
+
+func (r *RebalanceProgress) SetLogger(logger *logrus.Entry) {
+	atomic.SwapPointer((*unsafe.Pointer)((unsafe.Pointer)(&r.logger)), unsafe.Pointer(logger))
+}
+
+func (r *RebalanceProgress) Cancel() {
+	r.cancelled.Store(true)
+}
+
 func (c *Couchbase) AddNode(hostname, username, password string, services ServiceList) error {
 	return c.addNode(hostname, username, password, services)
 }
@@ -60,10 +109,10 @@ func (c *Couchbase) NodeInitialize(hostname, dataPath, indexPath string) error {
 	return nil
 }
 
-func (c *Couchbase) Rebalance(nodesToRemove []string) error {
+func (c *Couchbase) Rebalance(nodesToRemove []string) (*RebalanceProgress, error) {
 	cluster, err := c.getPoolsDefault()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	all := []string{}
@@ -77,7 +126,12 @@ func (c *Couchbase) Rebalance(nodesToRemove []string) error {
 		}
 	}
 
-	return c.rebalance(all, eject)
+	err = c.rebalance(all, eject)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RebalanceProgress{c, newAtomicBool(false), nil, 4*time.Second}, nil
 }
 
 func (c *Couchbase) CreateBucket(bucket *Bucket) error {

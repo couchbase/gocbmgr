@@ -39,6 +39,16 @@ func (c *Couchbase) getPoolsDefault() (*ClusterInfo, error) {
 	return clusterInfo, nil
 }
 
+func (c *Couchbase) getTasks() ([]*Task, error) {
+	tasks := []*Task{}
+	err := c.n_get("/pools/default/tasks", &tasks, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
 func (c *Couchbase) rebalance(allNodes, ejectNodes []string) error {
 	data := url.Values{}
 	data.Set("ejectedNodes", strings.Join(ejectNodes, ","))
