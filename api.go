@@ -113,3 +113,7 @@ func (c *Couchbase) BucketReady(name string) (bool, error) {
 func (c *Couchbase) GetBuckets() ([]*Bucket, error) {
 	return c.getBuckets()
 }
+
+func (c *Couchbase) SetAutoFailoverTimeout(enabled bool, timeout uint64) error {
+	return c.setAutoFailoverTimeout(enabled, timeout)
+}

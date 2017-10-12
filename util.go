@@ -12,6 +12,13 @@ func BoolToStr(b bool) string {
 	return strconv.Itoa(BoolToInt(b))
 }
 
+func BoolAsStr(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
+
 func IntToStr(i int) string {
 	return strconv.Itoa(i)
 }
