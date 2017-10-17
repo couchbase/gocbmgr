@@ -142,6 +142,10 @@ func (c *Couchbase) DeleteBucket(name string) error {
 	return c.deleteBucket(name)
 }
 
+func (c *Couchbase) EditBucket(bucket *Bucket) error {
+	return c.editBucket(bucket)
+}
+
 // Determine wether bucket is ready based on status resolving
 // to healthy across all nodes
 func (c *Couchbase) BucketReady(name string) (bool, error) {

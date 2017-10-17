@@ -2,6 +2,8 @@ package cbmgr
 
 import (
 	"fmt"
+	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -138,4 +140,35 @@ type Bucket struct {
 type BucketStatus struct {
 	Bucket
 	Nodes []Node `json:"nodes,omitempty"`
+}
+
+func (b *Bucket) FormEncode() []byte {
+	data := url.Values{}
+	data.Set("name", b.BucketName)
+	data.Set("bucketType", b.BucketType)
+	data.Set("ramQuotaMB", strconv.Itoa(b.BucketMemoryQuota))
+	data.Set("replicaNumber", strconv.Itoa(b.BucketReplicas))
+	data.Set("authType", "sasl")
+	if b.EvictionPolicy != nil {
+		data.Set("evictionPolicy", *b.EvictionPolicy)
+	}
+	if b.IoPriority != nil {
+		if *b.IoPriority == IoPriorityTypeHigh {
+			data.Set("threadsNumber", strconv.Itoa(int(IoPriorityThreadCountHigh)))
+		}
+		if *b.IoPriority == IoPriorityTypeLow {
+			data.Set("threadsNumber", strconv.Itoa(int(IoPriorityThreadCountLow)))
+		}
+	}
+	if b.ConflictResolution != nil {
+		data.Set("conflictResolutionType", *b.ConflictResolution)
+	}
+	if b.EnableFlush != nil {
+		data.Set("flushEnabled", BoolToStr(*b.EnableFlush))
+	}
+	if b.EnableIndexReplica != nil {
+		data.Set("replicaIndex", BoolToStr(*b.EnableIndexReplica))
+	}
+
+	return []byte(data.Encode())
 }

@@ -145,37 +145,10 @@ func (c *Couchbase) setWebSettings(username, password string, port int) error {
 }
 
 func (c *Couchbase) createBucket(bucket *Bucket) error {
-	data := url.Values{}
-	data.Set("name", bucket.BucketName)
-	data.Set("bucketType", bucket.BucketType)
-	data.Set("ramQuotaMB", strconv.Itoa(bucket.BucketMemoryQuota))
-	data.Set("replicaNumber", strconv.Itoa(bucket.BucketReplicas))
-	data.Set("authType", "sasl")
-	if bucket.EvictionPolicy != nil {
-		data.Set("evictionPolicy", *bucket.EvictionPolicy)
-	}
-	if bucket.IoPriority != nil {
-		if *bucket.IoPriority == IoPriorityTypeHigh {
-			data.Set("threadsNumber", strconv.Itoa(int(IoPriorityThreadCountHigh)))
-		}
-		if *bucket.IoPriority == IoPriorityTypeLow {
-			data.Set("threadsNumber", strconv.Itoa(int(IoPriorityThreadCountLow)))
-		}
-	}
-	if bucket.ConflictResolution != nil {
-		data.Set("conflictResolutionType", *bucket.ConflictResolution)
-	}
-	if bucket.EnableFlush != nil {
-		data.Set("flushEnabled", BoolToStr(*bucket.EnableFlush))
-	}
-	if bucket.EnableIndexReplica != nil {
-		data.Set("replicaIndex", BoolToStr(*bucket.EnableIndexReplica))
-	}
-
+	params := bucket.FormEncode()
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
-
-	return c.n_post("/pools/default/buckets", []byte(data.Encode()), headers)
+	return c.n_post("/pools/default/buckets", params, headers)
 }
 
 func (c *Couchbase) deleteBucket(name string) error {
@@ -184,6 +157,13 @@ func (c *Couchbase) deleteBucket(name string) error {
 
 	path := "/pools/default/buckets/" + name
 	return c.n_delete(path, headers)
+}
+
+func (c *Couchbase) editBucket(bucket *Bucket) error {
+	params := bucket.FormEncode()
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+	return c.n_post("/pools/default/buckets/"+bucket.BucketName, params, headers)
 }
 
 func (c *Couchbase) getBucketStatus(name string) (*BucketStatus, error) {
