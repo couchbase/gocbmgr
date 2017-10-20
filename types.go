@@ -1,6 +1,7 @@
 package cbmgr
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -120,26 +121,105 @@ type IoPriorityThreadCount int
 const (
 	IoPriorityTypeLow         IoPriorityType        = "low"
 	IoPriorityTypeHigh        IoPriorityType        = "high"
-	IoPriorityThreadCountLow  IoPriorityThreadCount = 2
+	IoPriorityThreadCountLow  IoPriorityThreadCount = 3
 	IoPriorityThreadCountHigh IoPriorityThreadCount = 8
 )
 
 type Bucket struct {
-	BucketName         string          `json:"name"`
-	BucketType         string          `json:"type"`
-	BucketMemoryQuota  int             `json:"memoryQuota"`
-	BucketReplicas     int             `json:"replicas"`
-	IoPriority         *IoPriorityType `json:"ioPriority"`
-	EvictionPolicy     *string         `json:"evictionPolicy"`
-	ConflictResolution *string         `json:"conflictResolution"`
-	EnableFlush        *bool           `json:"enableFlush"`
-	EnableIndexReplica *bool           `json:"enableIndexReplica"`
-	BucketPassword     *string         `json:"password"`
+	BucketName         string         `json:"name"`
+	BucketType         string         `json:"type"`
+	BucketMemoryQuota  int            `json:"memoryQuota"`
+	BucketReplicas     int            `json:"replicas"`
+	IoPriority         IoPriorityType `json:"ioPriority"`
+	EvictionPolicy     *string        `json:"evictionPolicy"`
+	ConflictResolution *string        `json:"conflictResolution"`
+	EnableFlush        *bool          `json:"enableFlush"`
+	EnableIndexReplica *bool          `json:"enableIndexReplica"`
+	BucketPassword     *string        `json:"password"`
 }
 
 type BucketStatus struct {
-	Bucket
-	Nodes []NodeInfo `json:"nodes,omitempty"`
+	Nodes                  []NodeInfo            `json:"nodes"`
+	BucketName             string                `json:"name"`
+	BucketType             string                `json:"bucketType"`
+	EvictionPolicy         string                `json:"evictionPolicy"`
+	EnableIndexReplica     bool                  `json:"replicaIndex"`
+	AutoCompactionSettings interface{}           `json:"autoCompactionSettings"`
+	ReplicaNumber          int                   `json:"replicaNumber"`
+	ThreadsNumber          IoPriorityThreadCount `json:"threadsNumber"`
+	Controllers            map[string]string     `json:"controllers"`
+	Quota                  map[string]int        `json:"quota"`
+	Stats                  map[string]string     `json:"stats"`
+	VBServerMap            VBucketServerMap      `json:"vBucketServerMap"`
+}
+
+type VBucketServerMap struct {
+	ServerList []string   `json:"serverList"`
+	VBMap      VBucketMap `json:"vBucketMap"`
+}
+
+type VBucketMap [][]int
+
+func (s *BucketStatus) GetIoPriority() IoPriorityType {
+	threadCount := s.ThreadsNumber
+
+	if threadCount <= IoPriorityThreadCountLow {
+		return IoPriorityTypeLow
+	}
+	return IoPriorityTypeHigh
+}
+
+// Unmarshall from json representation of
+// type Bucket or BucketStatus
+func (b *Bucket) UnmarshalJSON(data []byte) error {
+
+	// unmarshal as generic json
+	var jsonData map[string]interface{}
+	if err := json.Unmarshal(data, &jsonData); err != nil {
+		return err
+	}
+
+	// unmarshal as BucketStatus if nodes key exists
+	if _, ok := jsonData["nodes"]; ok {
+		return b.unmarshalFromStatus(data)
+	} else {
+
+		// unmarshal as standard bucket type
+		type BucketAlias Bucket
+		bucket := BucketAlias{}
+		if err := json.Unmarshal(data, &bucket); err != nil {
+			return err
+		}
+		*b = Bucket(bucket)
+		return nil
+	}
+
+}
+
+func (b *Bucket) unmarshalFromStatus(data []byte) error {
+
+	// unmarshalling data as bucket status
+	status := BucketStatus{}
+	if err := json.Unmarshal(data, &status); err != nil {
+		return err
+	}
+
+	b.BucketName = status.BucketName
+	b.BucketType = status.BucketType
+	b.EvictionPolicy = &status.EvictionPolicy
+	b.EnableIndexReplica = &status.EnableIndexReplica
+	b.BucketReplicas = status.ReplicaNumber
+
+	if _, ok := status.Controllers["flush"]; ok {
+		b.EnableFlush = &ok
+	}
+
+	if ramQuotaBytes, ok := status.Quota["ram"]; ok {
+		b.BucketMemoryQuota = ramQuotaBytes >> 20
+	}
+
+	b.IoPriority = status.GetIoPriority()
+	return nil
 }
 
 func (b *Bucket) FormEncode() []byte {
@@ -152,16 +232,14 @@ func (b *Bucket) FormEncode() []byte {
 	if b.EvictionPolicy != nil {
 		data.Set("evictionPolicy", *b.EvictionPolicy)
 	}
-	if b.IoPriority != nil {
-		if *b.IoPriority == IoPriorityTypeHigh {
-			data.Set("threadsNumber", strconv.Itoa(int(IoPriorityThreadCountHigh)))
-		}
-		if *b.IoPriority == IoPriorityTypeLow {
-			data.Set("threadsNumber", strconv.Itoa(int(IoPriorityThreadCountLow)))
-		}
+	if b.IoPriority == IoPriorityTypeLow {
+		data.Set("threadsNumber", strconv.Itoa(int(IoPriorityThreadCountLow)))
+	}
+	if b.IoPriority == IoPriorityTypeHigh {
+		data.Set("threadsNumber", strconv.Itoa(int(IoPriorityThreadCountHigh)))
 	}
 	if b.ConflictResolution != nil {
-		data.Set("conflictResolutionType", *b.ConflictResolution)
+		data.Set("conflictResolution", *b.ConflictResolution)
 	}
 	if b.EnableFlush != nil {
 		data.Set("flushEnabled", BoolToStr(*b.EnableFlush))
