@@ -139,7 +139,7 @@ type Bucket struct {
 
 type BucketStatus struct {
 	Bucket
-	Nodes []Node `json:"nodes,omitempty"`
+	Nodes []NodeInfo `json:"nodes,omitempty"`
 }
 
 func (b *Bucket) FormEncode() []byte {

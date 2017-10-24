@@ -2,11 +2,28 @@ package cbmgr
 
 import (
 	"time"
+	"net/url"
 	"sync/atomic"
 	"unsafe"
 
 	"github.com/sirupsen/logrus"
 )
+
+type Couchbase struct {
+	URL      *url.URL
+	Username string
+	Password string
+}
+
+func New(rawURL string) (*Couchbase, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, err
+	}
+	return &Couchbase{
+		URL: u,
+	}, nil
+}
 
 type RebalanceProgress struct {
 	client    *Couchbase
