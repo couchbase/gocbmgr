@@ -19,6 +19,16 @@ func (c *Couchbase) addNode(hostname, username, password string, services Servic
 	return c.n_post("/controller/addNode", []byte(data.Encode()), headers)
 }
 
+func (c *Couchbase) cancelAddNode(otpNode string) error {
+	data := url.Values{}
+	data.Set("otpNode", otpNode)
+
+	headers := c.defaultHeaders()
+	headers.Set("Content-Type", ContentTypeUrlEncoded)
+
+	return c.n_post("/controller/ejectNode", []byte(data.Encode()), headers)
+}
+
 func (c *Couchbase) getPools() (*PoolsInfo, error) {
 	info := &PoolsInfo{}
 	err := c.n_get("/pools", info, c.defaultHeaders())

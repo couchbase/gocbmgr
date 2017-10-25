@@ -1,6 +1,7 @@
 package cbmgr
 
 import (
+	"fmt"
 	"time"
 	"net/url"
 	"sync/atomic"
@@ -68,6 +69,21 @@ func (r *RebalanceProgress) Cancel() {
 
 func (c *Couchbase) AddNode(hostname, username, password string, services ServiceList) error {
 	return c.addNode(hostname, username, password, services)
+}
+
+func (c *Couchbase) CancelAddNode(hostname string) error {
+	cluster, err := c.getPoolsDefault()
+	if err != nil {
+		return err
+	}
+
+	for _, node := range cluster.Nodes {
+		if node.HostName == hostname {
+			return c.cancelAddNode(node.OTPNode)
+		}
+	}
+
+	return fmt.Errorf("Hostname %s is not part of the cluster", hostname)
 }
 
 func (c *Couchbase) ClusterInfo() (*ClusterInfo, error) {
