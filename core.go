@@ -55,52 +55,67 @@ func (e CouchbaseError) Error() string {
 }
 
 func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) error {
-	req, err := http.NewRequest("GET", c.URL.String()+path, nil)
-	if err != nil {
-		return CouchbaseError{0, path, clientError, map[string]string{"request_creation": err.Error()}}
+	networkErrors := make(map[string]string)
+	for _, endpoint := range c.endpoints {
+		req, err := http.NewRequest("GET", endpoint+path, nil)
+		if err != nil {
+			return CouchbaseError{0, path, clientError, map[string]string{"request_creation": err.Error()}}
+		}
+
+		req.Header = headers
+
+		client := http.Client{}
+		response, err := client.Do(req)
+		if err == nil {
+			return c.n_handleResponse(response, result)
+		}
+
+		networkErrors[endpoint+path] = err.Error()
 	}
 
-	req.Header = headers
-
-	client := http.Client{}
-	response, err := client.Do(req)
-	if err != nil {
-		return CouchbaseError{0, path, networkError, map[string]string{"send": err.Error()}}
-	}
-
-	return c.n_handleResponse(response, result)
+	return CouchbaseError{0, path, networkError, networkErrors}
 }
 
 func (c *Couchbase) n_post(path string, data []byte, headers http.Header) error {
-	req, err := http.NewRequest("POST", c.URL.String()+path, bytes.NewBuffer(data))
-	if err != nil {
-		return CouchbaseError{0, path, clientError, map[string]string{"request_creation": err.Error()}}
-	}
-	req.Header = headers
+	networkErrors := make(map[string]string)
+	for _, endpoint := range c.endpoints {
+		req, err := http.NewRequest("POST", endpoint+path, bytes.NewBuffer(data))
+		if err != nil {
+			return CouchbaseError{0, path, clientError, map[string]string{"request_creation": err.Error()}}
+		}
+		req.Header = headers
 
-	client := http.Client{}
-	response, err := client.Do(req)
-	if err != nil {
-		return CouchbaseError{0, path, networkError, map[string]string{"send": err.Error()}}
+		client := http.Client{}
+		response, err := client.Do(req)
+		if err == nil {
+			return c.n_handleResponse(response, nil)
+		}
+
+		networkErrors[endpoint+path] = err.Error()
 	}
 
-	return c.n_handleResponse(response, nil)
+	return CouchbaseError{0, path, networkError, networkErrors}
 }
 
 func (c *Couchbase) n_delete(path string, headers http.Header) error {
-	req, err := http.NewRequest("DELETE", c.URL.String()+path, nil)
-	if err != nil {
-		return CouchbaseError{0, path, clientError, map[string]string{"request_creation": err.Error()}}
-	}
-	req.Header = headers
+	networkErrors := make(map[string]string)
+	for _, endpoint := range c.endpoints {
+		req, err := http.NewRequest("DELETE", endpoint+path, nil)
+		if err != nil {
+			return CouchbaseError{0, path, clientError, map[string]string{"request_creation": err.Error()}}
+		}
+		req.Header = headers
 
-	client := http.Client{}
-	response, err := client.Do(req)
-	if err != nil {
-		return CouchbaseError{0, path, networkError, map[string]string{"send": err.Error()}}
+		client := http.Client{}
+		response, err := client.Do(req)
+		if err == nil {
+			return c.n_handleResponse(response, nil)
+		}
+
+		networkErrors[endpoint+path] = err.Error()
 	}
 
-	return c.n_handleResponse(response, nil)
+	return CouchbaseError{0, path, networkError, networkErrors}
 }
 
 func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}) error {
@@ -168,7 +183,7 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 }
 
 func (c *Couchbase) defaultHeaders() http.Header {
-	auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(c.Username+":"+c.Password))
+	auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(c.username+":"+c.password))
 
 	headers := http.Header{}
 	headers.Set(HeaderAuthorization, auth)

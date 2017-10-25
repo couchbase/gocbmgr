@@ -3,7 +3,6 @@ package cbmgr
 import (
 	"fmt"
 	"time"
-	"net/url"
 	"sync/atomic"
 	"unsafe"
 
@@ -11,19 +10,17 @@ import (
 )
 
 type Couchbase struct {
-	URL      *url.URL
-	Username string
-	Password string
+	endpoints []string
+	username  string
+	password  string
 }
 
-func New(rawURL string) (*Couchbase, error) {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return nil, err
-	}
+func New(endpoints []string, username, password string) *Couchbase {
 	return &Couchbase{
-		URL: u,
-	}, nil
+		endpoints: endpoints,
+		username:  username,
+		password:  password,
+	}
 }
 
 type RebalanceProgress struct {
