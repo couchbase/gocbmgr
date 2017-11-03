@@ -2,8 +2,8 @@ package cbmgr
 
 import (
 	"fmt"
-	"time"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"github.com/sirupsen/logrus"
@@ -161,7 +161,7 @@ func (c *Couchbase) Rebalance(nodesToRemove []string) (*RebalanceProgress, error
 		return nil, err
 	}
 
-	return &RebalanceProgress{c, newAtomicBool(false), nil, 4*time.Second}, nil
+	return &RebalanceProgress{c, newAtomicBool(false), nil, 4 * time.Second}, nil
 }
 
 func (c *Couchbase) CreateBucket(bucket *Bucket) error {
