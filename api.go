@@ -205,3 +205,7 @@ func (c *Couchbase) GetBuckets() ([]*Bucket, error) {
 func (c *Couchbase) SetAutoFailoverTimeout(enabled bool, timeout uint64) error {
 	return c.setAutoFailoverTimeout(enabled, timeout)
 }
+
+func (c *Couchbase) GetAutoFailoverSettings() (*AutoFailoverSettings, error) {
+	return c.getAutoFailoverSettings()
+}

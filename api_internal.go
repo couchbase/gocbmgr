@@ -210,3 +210,13 @@ func (c *Couchbase) setAutoFailoverTimeout(enabled bool, timeout uint64) error {
 
 	return c.n_post("/settings/autoFailover", []byte(data.Encode()), headers)
 }
+
+func (c *Couchbase) getAutoFailoverSettings() (*AutoFailoverSettings, error) {
+	settings := &AutoFailoverSettings{}
+	err := c.n_get("/settings/autoFailover", settings, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+
+	return settings, nil
+}

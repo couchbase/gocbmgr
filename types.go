@@ -93,6 +93,12 @@ type IndexSettings struct {
 	LogLevel           IndexLogLevel    `json:"logLevel"`
 }
 
+type AutoFailoverSettings struct {
+	Enabled bool   `json:"enabled"`
+	Timeout uint64 `json:"timeout"`
+	Count   uint8  `json:"count"`
+}
+
 type NodeInfo struct {
 	ThisNode     bool     `json:"thisNode"`
 	Uptime       string   `json:"uptime"`
