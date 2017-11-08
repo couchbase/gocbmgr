@@ -149,6 +149,7 @@ type BucketStatus struct {
 	BucketName             string                `json:"name"`
 	BucketType             string                `json:"bucketType"`
 	EvictionPolicy         string                `json:"evictionPolicy"`
+	ConflictResolution     string                `json:"conflictResolutionType"`
 	EnableIndexReplica     bool                  `json:"replicaIndex"`
 	AutoCompactionSettings interface{}           `json:"autoCompactionSettings"`
 	ReplicaNumber          int                   `json:"replicaNumber"`
@@ -213,6 +214,7 @@ func (b *Bucket) unmarshalFromStatus(data []byte) error {
 	b.BucketName = status.BucketName
 	b.BucketType = status.BucketType
 	b.EvictionPolicy = &status.EvictionPolicy
+	b.ConflictResolution = &status.ConflictResolution
 	b.EnableIndexReplica = &status.EnableIndexReplica
 	b.BucketReplicas = status.ReplicaNumber
 
