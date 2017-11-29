@@ -222,7 +222,7 @@ func (b *Bucket) unmarshalFromStatus(data []byte) error {
 		b.EnableFlush = &ok
 	}
 
-	if ramQuotaBytes, ok := status.Quota["ram"]; ok {
+	if ramQuotaBytes, ok := status.Quota["rawRAM"]; ok {
 		b.BucketMemoryQuota = ramQuotaBytes >> 20
 	}
 
