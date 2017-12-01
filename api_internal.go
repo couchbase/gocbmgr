@@ -83,6 +83,26 @@ func (c *Couchbase) setPoolsDefault(name string, dataMemQuotaMB, indexMemQuotaMB
 	return c.n_post("/pools/default", []byte(data.Encode()), headers)
 }
 
+func (c *Couchbase) setDataMemoryQuota(quota int) error {
+	return c.setMemoryQuota("memoryQuota", quota)
+}
+
+func (c *Couchbase) setIndexMemoryQuota(quota int) error {
+	return c.setMemoryQuota("indexMemoryQuota", quota)
+}
+
+func (c *Couchbase) setSearchMemoryQuota(quota int) error {
+	return c.setMemoryQuota("ftsMemoryQuota", quota)
+}
+
+func (c *Couchbase) setMemoryQuota(id string, quota int) error {
+	data := url.Values{}
+	data.Set(id, strconv.Itoa(quota))
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+	return c.n_post("/pools/default", []byte(data.Encode()), headers)
+}
+
 func (c *Couchbase) setStoragePaths(dataPath, indexPath string) error {
 	data := url.Values{}
 	data.Set("path", dataPath)

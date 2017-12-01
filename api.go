@@ -209,3 +209,15 @@ func (c *Couchbase) SetAutoFailoverTimeout(enabled bool, timeout uint64) error {
 func (c *Couchbase) GetAutoFailoverSettings() (*AutoFailoverSettings, error) {
 	return c.getAutoFailoverSettings()
 }
+
+func (c *Couchbase) SetDataMemoryQuota(quota int) error {
+	return c.setDataMemoryQuota(quota)
+}
+
+func (c *Couchbase) SetIndexMemoryQuota(quota int) error {
+	return c.setIndexMemoryQuota(quota)
+}
+
+func (c *Couchbase) SetSearchMemoryQuota(quota int) error {
+	return c.setSearchMemoryQuota(quota)
+}
