@@ -87,6 +87,10 @@ func (c *Couchbase) ClusterInfo() (*ClusterInfo, error) {
 	return c.getPoolsDefault()
 }
 
+func (c *Couchbase) SetPoolsDefault(name string, dataMemQuotaMB, indexMemQuotaMB, searchMemQuotaMB int) error {
+	return c.setPoolsDefault(name, dataMemQuotaMB, indexMemQuotaMB, searchMemQuotaMB)
+}
+
 func (c *Couchbase) ClusterInitialize(username, password, name string, dataMemQuotaMB, indexMemQuotaMB,
 	searchMemQuotaMB, port int, services []ServiceName, mode IndexStorageMode) error {
 
