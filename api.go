@@ -191,11 +191,11 @@ func (c *Couchbase) BucketReady(name string) (bool, error) {
 
 	// check bucket health on all nodes
 	if len(status.Nodes) == 0 {
-		return false, nil
+		return false, NewErrorBucketNotReady(name, "creation pending")
 	}
 	for _, node := range status.Nodes {
 		if node.Status != "healthy" {
-			return false, nil
+			return false, NewErrorBucketNotReady(name, node.Status)
 		}
 	}
 

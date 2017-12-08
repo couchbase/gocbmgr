@@ -28,6 +28,11 @@ func NewErrorDeleteBucket(name string, err error) error {
 	return emsg
 }
 
+func NewErrorBucketNotReady(name, reason string) error {
+	emsg := fmt.Errorf("bucket %s is not ready: %s", name, reason)
+	return emsg
+}
+
 // Returns true if two errors are equal
 func ErrCompare(e1, e2 error) bool {
 	return strings.Compare(e1.Error(), e2.Error()) == 0
