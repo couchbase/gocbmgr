@@ -202,6 +202,16 @@ func (c *Couchbase) BucketReady(name string) (bool, error) {
 	return true, nil
 }
 
+func (c *Couchbase) GetBucketStatus(name string) (*BucketStatus, error) {
+
+	status, err := c.getBucketStatus(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return status, nil
+}
+
 func (c *Couchbase) GetBuckets() ([]*Bucket, error) {
 	return c.getBuckets()
 }
