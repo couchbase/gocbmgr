@@ -33,6 +33,11 @@ func NewErrorBucketNotReady(name, reason string) error {
 	return emsg
 }
 
+func NewErrorClusterNodeNotFound(name string) error {
+	emsg := fmt.Errorf("unable to find cluster node: %s", name)
+	return emsg
+}
+
 // Returns true if two errors are equal
 func ErrCompare(e1, e2 error) bool {
 	return strings.Compare(e1.Error(), e2.Error()) == 0

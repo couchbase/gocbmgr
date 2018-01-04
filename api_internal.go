@@ -70,6 +70,16 @@ func (c *Couchbase) rebalance(allNodes, ejectNodes []string) error {
 	return c.n_post("/controller/rebalance", []byte(data.Encode()), headers)
 }
 
+func (c *Couchbase) failover(otpNode string) error {
+	data := url.Values{}
+	data.Set("otpNode", otpNode)
+
+	headers := c.defaultHeaders()
+	headers.Set("Content-Type", ContentTypeUrlEncoded)
+
+	return c.n_post("/controller/failOver", []byte(data.Encode()), headers)
+}
+
 func (c *Couchbase) setPoolsDefault(name string, dataMemQuotaMB, indexMemQuotaMB, searchMemQuotaMB int) error {
 	data := url.Values{}
 	data.Set("memoryQuota", strconv.Itoa(dataMemQuotaMB))
@@ -239,4 +249,12 @@ func (c *Couchbase) getAutoFailoverSettings() (*AutoFailoverSettings, error) {
 	}
 
 	return settings, nil
+}
+
+func (c *Couchbase) resetCount() error {
+
+	data := url.Values{}
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+	return c.n_post("/settings/autoFailover/resetCount", []byte(data.Encode()), headers)
 }

@@ -168,6 +168,22 @@ func (c *Couchbase) Rebalance(nodesToRemove []string) (*RebalanceProgress, error
 	return &RebalanceProgress{c, newAtomicBool(false), nil, 4 * time.Second}, nil
 }
 
+func (c *Couchbase) Failover(nodeToRemove string) error {
+	cluster, err := c.getPoolsDefault()
+	if err != nil {
+		return err
+	}
+
+	for _, node := range cluster.Nodes {
+		fmt.Println(node.HostName, nodeToRemove)
+		if node.HostName == nodeToRemove {
+			return c.failover(node.OTPNode)
+		}
+	}
+
+	return NewErrorClusterNodeNotFound(nodeToRemove)
+}
+
 func (c *Couchbase) CreateBucket(bucket *Bucket) error {
 	return c.createBucket(bucket)
 }
