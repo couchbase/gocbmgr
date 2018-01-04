@@ -225,3 +225,7 @@ func (c *Couchbase) SetIndexMemoryQuota(quota int) error {
 func (c *Couchbase) SetSearchMemoryQuota(quota int) error {
 	return c.setSearchMemoryQuota(quota)
 }
+
+func (c *Couchbase) GetIndexSettings() (*IndexSettings, error) {
+	return c.getIndexSettings()
+}
