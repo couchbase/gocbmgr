@@ -175,7 +175,6 @@ func (c *Couchbase) Failover(nodeToRemove string) error {
 	}
 
 	for _, node := range cluster.Nodes {
-		fmt.Println(node.HostName, nodeToRemove)
 		if node.HostName == nodeToRemove {
 			return c.failover(node.OTPNode)
 		}
