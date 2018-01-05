@@ -258,3 +258,13 @@ func (c *Couchbase) resetCount() error {
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
 	return c.n_post("/settings/autoFailover/resetCount", []byte(data.Encode()), headers)
 }
+
+func (c *Couchbase) getNodeInfo() (*NodeInfo, error) {
+	node := &NodeInfo{}
+	err := c.n_get("/nodes/self", node, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+
+	return node, nil
+}

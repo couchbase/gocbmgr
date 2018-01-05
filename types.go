@@ -22,6 +22,13 @@ const (
 	IndexStorageMOI    IndexStorageMode = "memory_optimized"
 )
 
+type AvailableStorageType string
+
+const (
+	StorageTypeHDD AvailableStorageType = "hdd"
+	StorageTypeSSD AvailableStorageType = "ssd"
+)
+
 type IndexLogLevel string
 
 const (
@@ -100,14 +107,22 @@ type AutoFailoverSettings struct {
 }
 
 type NodeInfo struct {
-	ThisNode     bool     `json:"thisNode"`
-	Uptime       string   `json:"uptime"`
-	Membership   string   `json:"clusterMembership"`
-	RecoveryType string   `json:"recoveryType"`
-	Status       string   `json:"status"`
-	OTPNode      string   `json:"otpNode"`
-	HostName     string   `json:"hostname"`
-	Services     []string `json:"services"`
+	ThisNode         bool                 `json:"thisNode"`
+	Uptime           string               `json:"uptime"`
+	Membership       string               `json:"clusterMembership"`
+	RecoveryType     string               `json:"recoveryType"`
+	Status           string               `json:"status"`
+	OTPNode          string               `json:"otpNode"`
+	HostName         string               `json:"hostname"`
+	Services         []string             `json:"services"`
+	AvailableStorage AvailableStorageInfo `json:"storage"`
+}
+
+type AvailableStorageInfo map[AvailableStorageType][]StorageInfo
+
+type StorageInfo struct {
+	Path      string `json:"path"`
+	IndexPath string `json:"index_path"`
 }
 
 type PoolsInfo struct {
