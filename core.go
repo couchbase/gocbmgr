@@ -18,107 +18,136 @@ const (
 	HeaderUserAgent     string = "User-Agent"
 )
 
-type couchbaseErrorType int
-
-const (
-	clientError  couchbaseErrorType = 0
-	networkError couchbaseErrorType = 0
-	serverError  couchbaseErrorType = 0
-)
-
-type CouchbaseError struct {
-	httpcode  int
-	api       string
-	errorType couchbaseErrorType
-	errors    map[string]string
+type BulkError struct {
+	errs []error
 }
 
-func (e CouchbaseError) ClientError() bool {
-	return e.errorType == clientError
+func (e BulkError) Error() string {
+	rv := ""
+	for i, err := range e.errs {
+		rv += "[" + err.Error() + "]"
+		if i != (len(e.errs) - 1) {
+			rv += ", "
+		}
+	}
+	return rv
 }
 
-func (e CouchbaseError) NetworkError() bool {
-	return e.errorType == networkError
+type ClientError struct {
+	reason string
+	err    error
 }
 
-func (e CouchbaseError) ServerError() bool {
-	return e.errorType == serverError
+func (e ClientError) Error() string {
+	return fmt.Sprintf("Client error `%s`: %s", e.reason, e.err.Error())
 }
 
-func (e CouchbaseError) Error() string {
+type NetworkError struct {
+	endpoint string
+	path     string
+	err      error
+}
+
+func (e NetworkError) Error() string {
+	return fmt.Sprintf("Network Error (%s%s): %s", e.endpoint, e.path, e.err.Error())
+}
+
+type ServerError struct {
+	errors   map[string]string
+	endpoint string
+	path     string
+	code     int
+}
+
+func (e ServerError) Error() string {
 	all := []string{}
 	for k, v := range e.errors {
 		all = append(all, k+" - "+v)
 	}
 
-	return fmt.Sprintf("Code: %d, Error: %v", e.httpcode, strings.Join(all, ","))
+	return fmt.Sprintf("Server Error %d (%s%s): %s", e.code, e.endpoint, e.path, all)
 }
 
 func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) error {
-	networkErrors := make(map[string]string)
+	errs := []error{}
 	for _, endpoint := range c.endpoints {
 		req, err := http.NewRequest("GET", endpoint+path, nil)
 		if err != nil {
-			return CouchbaseError{0, path, clientError, map[string]string{"request_creation": err.Error()}}
+			return ClientError{"request creation", err}
 		}
 
 		req.Header = headers
 
 		client := http.Client{}
 		response, err := client.Do(req)
-		if err == nil {
-			return c.n_handleResponse(response, result)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			if rerr := c.n_handleResponse(response, result); rerr != nil {
+				errs = append(errs, rerr)
+			} else {
+				return nil
+			}
 		}
 
-		networkErrors[endpoint+path] = err.Error()
 	}
 
-	return CouchbaseError{0, path, networkError, networkErrors}
+	return BulkError{errs}
 }
 
 func (c *Couchbase) n_post(path string, data []byte, headers http.Header) error {
-	networkErrors := make(map[string]string)
+	errs := []error{}
 	for _, endpoint := range c.endpoints {
 		req, err := http.NewRequest("POST", endpoint+path, bytes.NewBuffer(data))
 		if err != nil {
-			return CouchbaseError{0, path, clientError, map[string]string{"request_creation": err.Error()}}
+			return ClientError{"request creation", err}
 		}
 		req.Header = headers
 
 		client := http.Client{}
 		response, err := client.Do(req)
-		if err == nil {
-			return c.n_handleResponse(response, nil)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			if rerr := c.n_handleResponse(response, nil); rerr != nil {
+				errs = append(errs, rerr)
+			} else {
+				return nil
+			}
 		}
-
-		networkErrors[endpoint+path] = err.Error()
 	}
 
-	return CouchbaseError{0, path, networkError, networkErrors}
+	return BulkError{errs}
 }
 
 func (c *Couchbase) n_delete(path string, headers http.Header) error {
-	networkErrors := make(map[string]string)
+	errs := []error{}
 	for _, endpoint := range c.endpoints {
 		req, err := http.NewRequest("DELETE", endpoint+path, nil)
 		if err != nil {
-			return CouchbaseError{0, path, clientError, map[string]string{"request_creation": err.Error()}}
+			return ClientError{"request creation", err}
 		}
 		req.Header = headers
 
 		client := http.Client{}
 		response, err := client.Do(req)
-		if err == nil {
-			return c.n_handleResponse(response, nil)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			if rerr := c.n_handleResponse(response, nil); rerr != nil {
+				errs = append(errs, rerr)
+			} else {
+				return nil
+			}
 		}
-
-		networkErrors[endpoint+path] = err.Error()
 	}
 
-	return CouchbaseError{0, path, networkError, networkErrors}
+	return BulkError{errs}
 }
 
 func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}) error {
+	host := response.Request.Host
+	path := response.Request.URL.Path
 	if response.StatusCode == http.StatusOK || response.StatusCode == http.StatusAccepted || response.StatusCode == http.StatusCreated {
 		defer response.Body.Close()
 		if result != nil {
@@ -126,7 +155,7 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 			decoder.UseNumber()
 			err := decoder.Decode(result)
 			if err != nil {
-				return CouchbaseError{response.StatusCode, "", clientError, map[string]string{"response": err.Error()}}
+				return ClientError{"unmarshal json response", err}
 			}
 		}
 
@@ -135,7 +164,7 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 		defer response.Body.Close()
 		data, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			return CouchbaseError{response.StatusCode, "", clientError, map[string]string{"response": err.Error()}}
+			return ClientError{"unmarshal json response", err}
 		}
 
 		type errMapoverlay struct {
@@ -147,19 +176,19 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 		decoder.UseNumber()
 		err = decoder.Decode(&errMapData)
 		if err == nil {
-			return CouchbaseError{response.StatusCode, "", serverError, errMapData.Errors}
+			return ServerError{errMapData.Errors, host, path, response.StatusCode}
 		}
 
 		var listData []string
 		decoder = json.NewDecoder(bytes.NewReader(data))
 		err = decoder.Decode(&listData)
 		if err == nil {
-			return CouchbaseError{response.StatusCode, "", serverError, map[string]string{"error": listData[0]}}
+			return ServerError{map[string]string{"error": listData[0]}, host, path, response.StatusCode}
 		}
 
-		return CouchbaseError{response.StatusCode, "", clientError, map[string]string{"body": "Error processing response"}}
+		return ServerError{map[string]string{"body": "Client error processing response"}, host, path, response.StatusCode}
 	} else if response.StatusCode == http.StatusUnauthorized {
-		return CouchbaseError{response.StatusCode, "", serverError, map[string]string{"auth": "Invalid username and password"}}
+		return ServerError{map[string]string{"auth": "Invalid username and password"}, host, path, response.StatusCode}
 	} else if response.StatusCode == http.StatusForbidden {
 		defer response.Body.Close()
 		type overlay struct {
@@ -172,13 +201,13 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 		decoder.UseNumber()
 		err := decoder.Decode(&data)
 		if err != nil {
-			return CouchbaseError{response.StatusCode, "", clientError, map[string]string{"body": err.Error()}}
+			return ServerError{map[string]string{"body": err.Error()}, host, path, response.StatusCode}
 		}
 
 		msg := data.Message + ": " + strings.Join(data.Permissions, ", ")
-		return CouchbaseError{response.StatusCode, "", serverError, map[string]string{"permissions": msg}}
+		return ServerError{map[string]string{"permissions": msg}, host, path, response.StatusCode}
 	} else {
-		return CouchbaseError{response.StatusCode, "", serverError, map[string]string{}}
+		return ServerError{map[string]string{}, host, path, response.StatusCode}
 	}
 }
 
