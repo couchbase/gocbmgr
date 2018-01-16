@@ -1,7 +1,6 @@
 package cbmgr
 
 import (
-	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -234,7 +233,6 @@ func (c *Couchbase) getBucketStats(name string) (map[string]BucketStat, error) {
 				var tempValue statsSamples
 				err = c.n_get(s.SpecificStatsURL, &tempValue, c.defaultHeaders())
 				if err != nil {
-					fmt.Println(s)
 					return nil, err
 				}
 				stats[s.Name] = BucketStat{Title: s.Title, Desc: s.Desc, Value: tempValue.NodeStats}
