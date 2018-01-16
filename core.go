@@ -78,7 +78,7 @@ func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) 
 
 		req.Header = headers
 
-		client := http.Client{}
+		client := http.Client{Timeout: c.timeout}
 		response, err := client.Do(req)
 		if err != nil {
 			errs = append(errs, err)
@@ -104,7 +104,7 @@ func (c *Couchbase) n_post(path string, data []byte, headers http.Header) error 
 		}
 		req.Header = headers
 
-		client := http.Client{}
+		client := http.Client{Timeout: c.timeout}
 		response, err := client.Do(req)
 		if err != nil {
 			errs = append(errs, err)
@@ -129,7 +129,7 @@ func (c *Couchbase) n_delete(path string, headers http.Header) error {
 		}
 		req.Header = headers
 
-		client := http.Client{}
+		client := http.Client{Timeout: c.timeout}
 		response, err := client.Do(req)
 		if err != nil {
 			errs = append(errs, err)

@@ -13,6 +13,7 @@ type Couchbase struct {
 	endpoints []string
 	username  string
 	password  string
+	timeout   time.Duration
 }
 
 func New(endpoints []string, username, password string) *Couchbase {
@@ -20,7 +21,12 @@ func New(endpoints []string, username, password string) *Couchbase {
 		endpoints: endpoints,
 		username:  username,
 		password:  password,
+		timeout:   15 * time.Second,
 	}
+}
+
+func (c *Couchbase) SetTimeout(duration time.Duration) {
+	c.timeout = duration
 }
 
 type RebalanceProgress struct {
