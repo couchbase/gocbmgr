@@ -227,6 +227,15 @@ func (c *Couchbase) GetBucketStatus(name string) (*BucketStatus, error) {
 	return status, nil
 }
 
+func (c *Couchbase) GetBucketStats(name string) (map[string]BucketStat, error) {
+
+	status, err := c.getBucketStats(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return status, nil
+}
 func (c *Couchbase) GetBuckets() ([]*Bucket, error) {
 	return c.getBuckets()
 }

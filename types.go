@@ -175,6 +175,34 @@ type BucketStatus struct {
 	VBServerMap            VBucketServerMap      `json:"vBucketServerMap"`
 }
 
+type bucketStat struct {
+	SpecificStatsURL string `json:"specificStatsURL"`
+	Name             string `json:"name"`
+	Title            string `json:"title"`
+	Desc             string `json:"desc"`
+}
+type BucketStat struct {
+	Title string               `json:"title"`
+	Desc  string               `json:"desc"`
+	Value map[string][]float64 `json:"value"`
+}
+type statsDirectory struct {
+	Blocks []struct {
+		BlockName       string       `json:"blockName"`
+		ServerResources bool         `json:"serverResources"`
+		Stats           []bucketStat `json:"stats"`
+	} `json:"blocks"`
+}
+
+type statsSamples struct {
+	SamplesCount int                  `json:"samplesCount"`
+	IsPersistent bool                 `json:"isPersistent"`
+	LastTStamp   int64                `json:"lastTStamp"`
+	Interval     int                  `json:"interval"`
+	Timestamp    []int64              `json:"timestamp"`
+	NodeStats    map[string][]float64 `json:"nodeStats"`
+}
+
 type VBucketServerMap struct {
 	ServerList []string   `json:"serverList"`
 	VBMap      VBucketMap `json:"vBucketMap"`

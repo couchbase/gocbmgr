@@ -1,6 +1,7 @@
 package cbmgr
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -214,6 +215,34 @@ func (c *Couchbase) getBucketStatus(name string) (*BucketStatus, error) {
 		return nil, err
 	}
 	return status, nil
+}
+
+func (c *Couchbase) getBucketStats(name string) (map[string]BucketStat, error) {
+	//Basic support, only Summary stats
+	status, err := c.getBucketStatus(name)
+	stats := make(map[string]BucketStat, 1)
+	var rawStats statsDirectory
+	path := status.Stats["directoryURI"]
+	err = c.n_get(path, &rawStats, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+	for _, block := range rawStats.Blocks {
+
+		if block.BlockName == "Summary" {
+			for _, s := range block.Stats {
+				var tempValue statsSamples
+				err = c.n_get(s.SpecificStatsURL, &tempValue, c.defaultHeaders())
+				if err != nil {
+					fmt.Println(s)
+					return nil, err
+				}
+				stats[s.Name] = BucketStat{Title: s.Title, Desc: s.Desc, Value: tempValue.NodeStats}
+			}
+		}
+	}
+
+	return stats, nil
 }
 
 func (c *Couchbase) getBuckets() ([]*Bucket, error) {
