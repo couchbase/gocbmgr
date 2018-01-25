@@ -235,6 +235,9 @@ func (b *Bucket) unmarshalFromStatus(data []byte) error {
 
 	if _, ok := status.Controllers["flush"]; ok {
 		b.EnableFlush = &ok
+	} else {
+		disabled := false
+		b.EnableFlush = &disabled
 	}
 
 	if ramQuotaBytes, ok := status.Quota["rawRAM"]; ok {
