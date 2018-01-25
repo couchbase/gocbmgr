@@ -262,7 +262,7 @@ func (b *Bucket) FormEncode() []byte {
 		data.Set("threadsNumber", strconv.Itoa(int(IoPriorityThreadCountHigh)))
 	}
 	if b.ConflictResolution != nil {
-		data.Set("conflictResolution", *b.ConflictResolution)
+		data.Set("conflictResolutionType", *b.ConflictResolution)
 	}
 	if b.EnableFlush != nil {
 		data.Set("flushEnabled", BoolToStr(*b.EnableFlush))
