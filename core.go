@@ -2,6 +2,8 @@ package cbmgr
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -68,6 +70,42 @@ func (e ServerError) Error() string {
 	return fmt.Sprintf("Server Error %d (%s%s): %s", e.code, e.endpoint, e.path, all)
 }
 
+// Check whether the endpoint is using TLS or not
+func (c *Couchbase) getScheme(endpoint string) string {
+	if strings.HasPrefix(endpoint, "https://") {
+		return "https"
+	}
+	return "http"
+}
+
+func (c *Couchbase) getClient(endpoint string) (*http.Client, error) {
+	client := &http.Client{
+		Timeout: c.timeout,
+	}
+	if c.getScheme(endpoint) == "https" && c.tls != nil {
+		tlsClientConfig := &tls.Config{
+			RootCAs: x509.NewCertPool(),
+		}
+		// At the very least we need a CA certificate to attain trust in the remote end
+		if ok := tlsClientConfig.RootCAs.AppendCertsFromPEM(c.tls.CACert); !ok {
+			return nil, ClientError{"client create", fmt.Errorf("failed to append CA certificate")}
+		}
+		// If the remote end needs to trust us too we add a client certificate and key pair
+		if c.tls.ClientAuth != nil {
+			cert, err := tls.X509KeyPair(c.tls.ClientAuth.Cert, c.tls.ClientAuth.Key)
+			if err != nil {
+				return nil, err
+			}
+			tlsClientConfig.Certificates = append(tlsClientConfig.Certificates, cert)
+		}
+		transport := &http.Transport{
+			TLSClientConfig: tlsClientConfig,
+		}
+		client.Transport = transport
+	}
+	return client, nil
+}
+
 func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) error {
 	errs := []error{}
 	for _, endpoint := range c.endpoints {
@@ -78,7 +116,10 @@ func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) 
 
 		req.Header = headers
 
-		client := http.Client{Timeout: c.timeout}
+		client, err := c.getClient(endpoint)
+		if err != nil {
+			return ClientError{"client create", err}
+		}
 		response, err := client.Do(req)
 		if err != nil {
 			errs = append(errs, err)
@@ -104,7 +145,10 @@ func (c *Couchbase) n_post(path string, data []byte, headers http.Header) error 
 		}
 		req.Header = headers
 
-		client := http.Client{Timeout: c.timeout}
+		client, err := c.getClient(endpoint)
+		if err != nil {
+			return ClientError{"client create", err}
+		}
 		response, err := client.Do(req)
 		if err != nil {
 			errs = append(errs, err)
@@ -129,7 +173,10 @@ func (c *Couchbase) n_delete(path string, headers http.Header) error {
 		}
 		req.Header = headers
 
-		client := http.Client{Timeout: c.timeout}
+		client, err := c.getClient(endpoint)
+		if err != nil {
+			return ClientError{"client create", err}
+		}
 		response, err := client.Do(req)
 		if err != nil {
 			errs = append(errs, err)

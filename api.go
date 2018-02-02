@@ -9,19 +9,52 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Certificate and key used by TLS client authentication
+type TLSClientAuth struct {
+        // PEM encoded certificate
+        Cert []byte
+        // PEM encoded private key
+        Key  []byte
+}
+
+// TLS Authentication parameters
+type TLSAuth struct {
+        // PEM encoded CA certificate
+        CACert     []byte
+        // Optional client authentication
+        ClientAuth *TLSClientAuth
+}
+
+// Client certificate authentication prefixes, used to extract the user name
+type ClientCertAuthPrefix struct {
+	Path      string `json:"path"`
+	Prefix    string `json:"prefix"`
+	Delimiter string `json:"delimiter"`
+}
+
+// Client certificate authentication settings
+type ClientCertAuth struct {
+	// Must be 'disable', 'enable', 'mandatory'
+	State    string `json:"state"`
+	// Maximum of 10
+	Prefixes []ClientCertAuthPrefix `json:"prefixes"`
+}
+
 type Couchbase struct {
 	endpoints []string
 	username  string
 	password  string
 	timeout   time.Duration
+	tls       *TLSAuth
 }
 
-func New(endpoints []string, username, password string) *Couchbase {
+func New(endpoints []string, username, password string, tls *TLSAuth) *Couchbase {
 	return &Couchbase{
 		endpoints: endpoints,
 		username:  username,
 		password:  password,
 		timeout:   15 * time.Second,
+		tls:       tls,
 	}
 }
 
@@ -263,4 +296,16 @@ func (c *Couchbase) GetIndexSettings() (*IndexSettings, error) {
 
 func (c *Couchbase) GetNodeInfo() (*NodeInfo, error) {
 	return c.getNodeInfo()
+}
+
+func (c *Couchbase) UploadClusterCACert(pem []byte) error {
+	return c.uploadClusterCACert(pem)
+}
+
+func (c *Couchbase) ReloadNodeCert() error {
+	return c.reloadNodeCert()
+}
+
+func (c *Couchbase) SetClientCertAuth(settings *ClientCertAuth) error {
+	return c.setClientCertAuth(settings)
 }

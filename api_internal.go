@@ -1,6 +1,7 @@
 package cbmgr
 
 import (
+	"encoding/json"
 	"net/url"
 	"strconv"
 	"strings"
@@ -271,4 +272,23 @@ func (c *Couchbase) getNodeInfo() (*NodeInfo, error) {
 	}
 
 	return node, nil
+}
+
+func (c *Couchbase) uploadClusterCACert(pem []byte) error {
+	headers := c.defaultHeaders()
+	return c.n_post("/controller/uploadClusterCA", pem, headers)
+}
+
+func (c *Couchbase) reloadNodeCert() error {
+	headers := c.defaultHeaders()
+	return c.n_post("/node/controller/reloadCertificate", []byte{}, headers)
+}
+
+func (c *Couchbase) setClientCertAuth(settings *ClientCertAuth) error {
+	data, err := json.Marshal(settings)
+	if err != nil {
+		return err
+	}
+	headers := c.defaultHeaders()
+	return c.n_post("/settings/clientCertAuth", data, headers)
 }
