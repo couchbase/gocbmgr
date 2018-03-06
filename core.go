@@ -1,15 +1,19 @@
 package cbmgr
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const (
@@ -70,40 +74,146 @@ func (e ServerError) Error() string {
 	return fmt.Sprintf("Server Error %d (%s%s): %s", e.code, e.endpoint, e.path, all)
 }
 
-// Check whether the endpoint is using TLS or not
-func (c *Couchbase) getScheme(endpoint string) string {
-	if strings.HasPrefix(endpoint, "https://") {
-		return "https"
-	}
-	return "http"
-}
+// newClient creates a new HTTP client which offers connection persistence and
+// also checks that the UUID of a host is what we expect when dialing before
+// allowing further HTTP requests.
+//
+// Here be dragons!  You have been warned...
+func (c *Couchbase) makeClient() {
+	// uuidCheck is a closure which binds basic HTTP authorization and cluster
+	// UUID to the configuration.  It is responsible for doing a HTTP GET from
+	// a new network connection and verifying that the UUID matches what we
+	// expect before allowing the http.Client to be used.
+	uuidCheck := func(addr string, conn net.Conn) error {
+		// Checks not enabled yet i.e. cluster initialization
+		if c.uuid == "" {
+			return nil
+		}
 
-func (c *Couchbase) getClient(endpoint string) (*http.Client, error) {
-	client := &http.Client{
-		Timeout: c.timeout,
+		// Construct a HTTP request
+		req, err := http.NewRequest("GET", "/pools", nil)
+		if err != nil {
+			return fmt.Errorf("uuid check: %s", err.Error())
+		}
+		req.URL.Host = addr
+		req.Header.Set("Accept-Encoding", "application/json")
+		req.SetBasicAuth(c.username, c.password)
+
+		// Perform the transaction
+		if err = req.Write(conn); err != nil {
+			return fmt.Errorf("uuid check: %s", err.Error())
+		}
+		resp, err := http.ReadResponse(bufio.NewReader(conn), req)
+		if err != nil {
+			return fmt.Errorf("uuid check: %s", err.Error())
+		}
+
+		// Check the status code was 2XX
+		if resp.StatusCode / 100 != 2 {
+			return fmt.Errorf("uuid check: unexpected status code '%s' from %s", resp.Status, addr)
+		}
+		defer resp.Body.Close()
+
+		// Read the body
+		buffer, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("uuid check: %s", err.Error())
+		}
+
+		// Parse the JSON body into our anonymous struct, we only care about the UUID
+		var body struct {
+			UUID string
+		}
+		if err = json.Unmarshal(buffer, &body); err != nil {
+			return fmt.Errorf("uuid check: json error '%s' from %s", err.Error(), addr)
+		}
+
+		// Finally check the UUID is as we expect.  Will be empty if no body was found
+		if body.UUID != c.uuid {
+			return fmt.Errorf("uuid check: wanted %s got %s from %s", c.uuid, body.UUID, addr)
+		}
+		return nil
 	}
-	if c.getScheme(endpoint) == "https" && c.tls != nil {
-		tlsClientConfig := &tls.Config{
-			RootCAs: x509.NewCertPool(),
+
+	// dialContext is a closure which binds to the uuidCheck closure which
+	// is specific to the username/password/uuid of the cluster.  It is called
+	// when a HTTP client first dials a host and verifies the UUID is as expected.
+	dialContext := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		// Establish a TCP connection
+		dialer := &net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
 		}
-		// At the very least we need a CA certificate to attain trust in the remote end
-		if ok := tlsClientConfig.RootCAs.AppendCertsFromPEM(c.tls.CACert); !ok {
-			return nil, ClientError{"client create", fmt.Errorf("failed to append CA certificate")}
+		conn, err := dialer.DialContext(ctx, network, addr)
+		if err != nil {
+			return nil, err
 		}
-		// If the remote end needs to trust us too we add a client certificate and key pair
-		if c.tls.ClientAuth != nil {
-			cert, err := tls.X509KeyPair(c.tls.ClientAuth.Cert, c.tls.ClientAuth.Key)
-			if err != nil {
-				return nil, err
+
+		// Check the UUID of the host matches our configuration before
+		// allowing use of this connection
+		if err = uuidCheck(addr, conn); err != nil {
+			return nil, err
+		}
+
+		return conn, nil
+	}
+
+	// dialTLS is a closure which binds to the uuidCheck closure which
+	// is specific to the username/password/uuid of the cluster.  It is called
+	// when a HTTPS client first dials a host and verifies the UUID is as expected.
+	dialTLS := func(network, addr string) (net.Conn, error) {
+		// If the TLS configuration is explicilty set use that, otherwise
+		// use a basic configuration (which won't ever work unless your cluster
+		// is signed by a CA defined in the ca-certificates package)
+		var tlsClientConfig *tls.Config = nil
+		if c.tls != nil {
+			tlsClientConfig = &tls.Config{
+				RootCAs: x509.NewCertPool(),
 			}
-			tlsClientConfig.Certificates = append(tlsClientConfig.Certificates, cert)
+			// At the very least we need a CA certificate to attain trust in the remote end
+			if ok := tlsClientConfig.RootCAs.AppendCertsFromPEM(c.tls.CACert); !ok {
+				return nil, fmt.Errorf("failed to append CA certificate")
+			}
+			// If the remote end needs to trust us too we add a client certificate and key pair
+			if c.tls.ClientAuth != nil {
+				cert, err := tls.X509KeyPair(c.tls.ClientAuth.Cert, c.tls.ClientAuth.Key)
+				if err != nil {
+					return nil, err
+				}
+				tlsClientConfig.Certificates = append(tlsClientConfig.Certificates, cert)
+			}
 		}
-		transport := &http.Transport{
-			TLSClientConfig: tlsClientConfig,
+
+		// Establish a TCP connection with TLS transport
+		dialer := &net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
 		}
-		client.Transport = transport
+		conn, err := tls.DialWithDialer(dialer, network, addr, tlsClientConfig)
+		if err != nil {
+			return nil, err
+		}
+
+		// Check the UUID of the host matches our configuration before
+		// allowing use of this connection
+		if err = uuidCheck(addr, conn); err != nil {
+			return nil, err
+		}
+		return conn, nil
 	}
-	return client, nil
+
+	// Create the basic client configuration to support HTTP
+	client := &http.Client{
+		Transport: &http.Transport{
+			DialContext:  dialContext,
+			DialTLS:      dialTLS,
+			MaxIdleConns: 100,
+		},
+	}
+
+	c.client = client
 }
 
 func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) error {
@@ -116,11 +226,7 @@ func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) 
 
 		req.Header = headers
 
-		client, err := c.getClient(endpoint)
-		if err != nil {
-			return ClientError{"client create", err}
-		}
-		response, err := client.Do(req)
+		response, err := c.client.Do(req)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -145,11 +251,7 @@ func (c *Couchbase) n_post(path string, data []byte, headers http.Header) error 
 		}
 		req.Header = headers
 
-		client, err := c.getClient(endpoint)
-		if err != nil {
-			return ClientError{"client create", err}
-		}
-		response, err := client.Do(req)
+		response, err := c.client.Do(req)
 		if err != nil {
 			errs = append(errs, err)
 		} else {
@@ -173,11 +275,7 @@ func (c *Couchbase) n_delete(path string, headers http.Header) error {
 		}
 		req.Header = headers
 
-		client, err := c.getClient(endpoint)
-		if err != nil {
-			return ClientError{"client create", err}
-		}
-		response, err := client.Do(req)
+		response, err := c.client.Do(req)
 		if err != nil {
 			errs = append(errs, err)
 		} else {

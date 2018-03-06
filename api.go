@@ -2,6 +2,7 @@ package cbmgr
 
 import (
 	"fmt"
+	"net/http"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -11,18 +12,18 @@ import (
 
 // Certificate and key used by TLS client authentication
 type TLSClientAuth struct {
-        // PEM encoded certificate
-        Cert []byte
-        // PEM encoded private key
-        Key  []byte
+	// PEM encoded certificate
+	Cert []byte
+	// PEM encoded private key
+	Key []byte
 }
 
 // TLS Authentication parameters
 type TLSAuth struct {
-        // PEM encoded CA certificate
-        CACert     []byte
-        // Optional client authentication
-        ClientAuth *TLSClientAuth
+	// PEM encoded CA certificate
+	CACert []byte
+	// Optional client authentication
+	ClientAuth *TLSClientAuth
 }
 
 // Client certificate authentication prefixes, used to extract the user name
@@ -35,31 +36,66 @@ type ClientCertAuthPrefix struct {
 // Client certificate authentication settings
 type ClientCertAuth struct {
 	// Must be 'disable', 'enable', 'mandatory'
-	State    string `json:"state"`
+	State string `json:"state"`
 	// Maximum of 10
 	Prefixes []ClientCertAuthPrefix `json:"prefixes"`
 }
 
+// Couchbase is a structure which encapsulates HTTP API access to a
+// Couchbase cluster
 type Couchbase struct {
+	// endpoints is a list of URIs to try when performing and operation
 	endpoints []string
-	username  string
-	password  string
-	timeout   time.Duration
-	tls       *TLSAuth
+	// username is used in basic HTTP authorization
+	username string
+	// password is used in basic HTTP authorization
+	password string
+	// uuid, when set, is used to verify that endpoints we are connecting
+	// to are part of the specified cluster and will return reliable
+	// responses
+	uuid string
+	// tls, if set, specifies the client certificate chain and private keys
+	// for mutual verification.  It also contains at least a CA certificate
+	// to authenticate the server is trustworthy
+	tls *TLSAuth
+	// client is a persistent connection pool to be used by all endpoints
+	// associated with this connection context.  It will become invalid
+	// if any parameters used in the TLS handshake, or HTTP UUID check
+	// are updated.
+	client *http.Client
 }
 
-func New(endpoints []string, username, password string, tls *TLSAuth) *Couchbase {
-	return &Couchbase{
-		endpoints: endpoints,
+// New creates a new Couchbase HTTP(S) API client and initializes the
+// HTTP connection pool.
+func New(username, password string) *Couchbase {
+	c := &Couchbase{
+		endpoints: []string{},
 		username:  username,
 		password:  password,
-		timeout:   15 * time.Second,
-		tls:       tls,
 	}
+	c.makeClient()
+	return c
 }
 
-func (c *Couchbase) SetTimeout(duration time.Duration) {
-	c.timeout = duration
+// SetEndpoints sets the current working set of endpoints to try API requests
+// against in the event of failure.  The endpoint host and port will be used
+// to lookup a persistent connection in the http.Client.
+func (c *Couchbase) SetEndpoints(endpoints []string) {
+	c.endpoints = endpoints
+}
+
+// SetUUID updates the cluster UUID to check new connections against.  Creates
+// a new client object to flush existing persistent connections.
+func (c *Couchbase) SetUUID(uuid string) {
+	c.uuid = uuid
+	c.makeClient()
+}
+
+// SetTLS updates the client TLS settings.  Creates a new client object to
+// flush existing persistent connections.
+func (c *Couchbase) SetTLS(tls *TLSAuth) {
+	c.tls = tls
+	c.makeClient()
 }
 
 type RebalanceProgress struct {
