@@ -1,6 +1,7 @@
 package cbmgr
 
 import (
+	"encoding/json"
 	"net/url"
 	"strconv"
 	"strings"
@@ -200,6 +201,10 @@ func (c *Couchbase) deleteBucket(name string) error {
 }
 
 func (c *Couchbase) editBucket(bucket *Bucket) error {
+	// bucket params cannot include conflict resolution field
+	// during edit.  TODO: fix for couchbase rest API
+	bucket.ConflictResolution = nil
+
 	params := bucket.FormEncode()
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
@@ -294,4 +299,23 @@ func (c *Couchbase) getNodeInfo() (*NodeInfo, error) {
 	}
 
 	return node, nil
+}
+
+func (c *Couchbase) uploadClusterCACert(pem []byte) error {
+	headers := c.defaultHeaders()
+	return c.n_post("/controller/uploadClusterCA", pem, headers)
+}
+
+func (c *Couchbase) reloadNodeCert() error {
+	headers := c.defaultHeaders()
+	return c.n_post("/node/controller/reloadCertificate", []byte{}, headers)
+}
+
+func (c *Couchbase) setClientCertAuth(settings *ClientCertAuth) error {
+	data, err := json.Marshal(settings)
+	if err != nil {
+		return err
+	}
+	headers := c.defaultHeaders()
+	return c.n_post("/settings/clientCertAuth", data, headers)
 }
