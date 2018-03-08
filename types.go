@@ -182,7 +182,6 @@ type bucketStat struct {
 	Desc             string `json:"desc"`
 }
 type BucketStat struct {
-	Name  string               `json:"name"`
 	Title string               `json:"title"`
 	Desc  string               `json:"desc"`
 	Value map[string][]float64 `json:"value"`
