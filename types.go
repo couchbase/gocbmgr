@@ -263,6 +263,9 @@ func (b *Bucket) unmarshalFromStatus(data []byte) error {
 
 	if _, ok := status.Controllers["flush"]; ok {
 		b.EnableFlush = &ok
+	} else {
+		disabled := false
+		b.EnableFlush = &disabled
 	}
 
 	if ramQuotaBytes, ok := status.Quota["rawRAM"]; ok {
@@ -290,7 +293,7 @@ func (b *Bucket) FormEncode() []byte {
 		data.Set("threadsNumber", strconv.Itoa(int(IoPriorityThreadCountHigh)))
 	}
 	if b.ConflictResolution != nil {
-		data.Set("conflictResolution", *b.ConflictResolution)
+		data.Set("conflictResolutionType", *b.ConflictResolution)
 	}
 	if b.EnableFlush != nil {
 		data.Set("flushEnabled", BoolToStr(*b.EnableFlush))
