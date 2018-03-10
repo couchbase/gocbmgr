@@ -240,7 +240,10 @@ func (c *Couchbase) getBucketStats(name string) (map[string]BucketStat, error) {
 				if err != nil {
 					return nil, err
 				}
-				stats[s.Name] = BucketStat{Title: s.Title, Desc: s.Desc, Value: tempValue.NodeStats}
+				stats[s.Name] = BucketStat{
+					Title: s.Title,
+					Desc:  s.Desc,
+					Value: tempValue.NodeStats}
 			}
 		}
 	}
