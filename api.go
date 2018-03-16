@@ -249,6 +249,10 @@ func (c *Couchbase) SetDataMemoryQuota(quota int) error {
 	return c.setDataMemoryQuota(quota)
 }
 
+func (c *Couchbase) ResetFailoverCounter() error {
+	return c.resetCount()
+}
+
 func (c *Couchbase) SetIndexMemoryQuota(quota int) error {
 	return c.setIndexMemoryQuota(quota)
 }
