@@ -41,6 +41,17 @@ type ClientCertAuth struct {
 	Prefixes []ClientCertAuthPrefix `json:"prefixes"`
 }
 
+// UserAgent defines the HTTP User-Agent header string
+type UserAgent struct {
+	// Name is the unique name of the client e.g. couchbase-operator
+	Name string
+	// Version is the release version of the client
+	Version string
+	// UUID is a unique identifier of the client to differentiate it from
+	// other clients of the same Name e.g. a FQDN.  This field is optional
+	UUID string
+}
+
 // Couchbase is a structure which encapsulates HTTP API access to a
 // Couchbase cluster
 type Couchbase struct {
@@ -63,6 +74,10 @@ type Couchbase struct {
 	// if any parameters used in the TLS handshake, or HTTP UUID check
 	// are updated.
 	client *http.Client
+	// userAgent is sent to the server for all API requests and allows us
+	// to uniquely identify the client e.g. differentiates from other go
+	// tools or even instances of couchbase-operator
+	userAgent *UserAgent
 }
 
 // New creates a new Couchbase HTTP(S) API client and initializes the
@@ -96,6 +111,12 @@ func (c *Couchbase) SetUUID(uuid string) {
 func (c *Couchbase) SetTLS(tls *TLSAuth) {
 	c.tls = tls
 	c.makeClient()
+}
+
+// SetUserAgent sets the User-Agent header to be sent in subsequent HTTP
+// requests
+func (c *Couchbase) SetUserAgent(userAgent *UserAgent) {
+	c.userAgent = userAgent
 }
 
 type RebalanceProgress struct {

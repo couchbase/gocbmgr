@@ -110,7 +110,7 @@ func (c *Couchbase) makeClient() {
 		}
 
 		// Check the status code was 2XX
-		if resp.StatusCode / 100 != 2 {
+		if resp.StatusCode/100 != 2 {
 			return fmt.Errorf("uuid check: unexpected status code '%s' from %s", resp.Status, addr)
 		}
 		defer resp.Body.Close()
@@ -373,7 +373,15 @@ func (c *Couchbase) defaultHeaders() http.Header {
 
 	headers := http.Header{}
 	headers.Set(HeaderAuthorization, auth)
-	headers.Set(HeaderUserAgent, "gocbmgr")
+
+	userAgent := "gocbmgr"
+	if c.userAgent != nil {
+		userAgent = c.userAgent.Name + "/" + c.userAgent.Version
+		if c.userAgent.UUID != "" {
+			userAgent += " (" + c.userAgent.UUID + ")"
+		}
+	}
+	headers.Set(HeaderUserAgent, userAgent)
 
 	return headers
 }
