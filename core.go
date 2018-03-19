@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -122,15 +123,26 @@ func (c *Couchbase) makeClient() {
 
 		// Parse the JSON body into our anonymous struct, we only care about the UUID
 		var body struct {
-			UUID string
+			UUID interface{}
 		}
 		if err = json.Unmarshal(buffer, &body); err != nil {
 			return fmt.Errorf("uuid check: json error '%s' from %s", err.Error(), addr)
 		}
 
+		// UUID is a string if set or an empty array otherwise :/
+		var uuid string
+		switch t := body.UUID.(type) {
+		case string:
+			uuid = t
+		case []interface{}:
+			return fmt.Errorf("uuid is unset")
+		default:
+			return fmt.Errorf("uuid is unexpected type: %s", reflect.TypeOf(t))
+		}
+
 		// Finally check the UUID is as we expect.  Will be empty if no body was found
-		if body.UUID != c.uuid {
-			return fmt.Errorf("uuid check: wanted %s got %s from %s", c.uuid, body.UUID, addr)
+		if uuid != c.uuid {
+			return fmt.Errorf("uuid check: wanted %s got %s from %s", c.uuid, uuid, addr)
 		}
 		return nil
 	}
