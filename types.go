@@ -276,3 +276,9 @@ func (b *Bucket) FormEncode() []byte {
 
 	return []byte(data.Encode())
 }
+
+// SettingsStats is the data structure returned by /settings/stats
+type SettingsStats struct {
+	// SendStats actually indicates whether to perform software update checks
+	SendStats bool `json:"sendStats"`
+}

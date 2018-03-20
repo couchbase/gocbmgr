@@ -292,3 +292,19 @@ func (c *Couchbase) setClientCertAuth(settings *ClientCertAuth) error {
 	headers := c.defaultHeaders()
 	return c.n_post("/settings/clientCertAuth", data, headers)
 }
+
+func (c *Couchbase) getUpdatesEnabled() (bool, error) {
+	settingsStats := &SettingsStats{}
+	if err := c.n_get("/settings/stats", settingsStats, c.defaultHeaders()); err != nil {
+		return false, err
+	}
+	return settingsStats.SendStats, nil
+}
+
+func (c *Couchbase) setUpdatesEnabled(enabled bool) error {
+	data := url.Values{}
+	data.Set("sendStats", BoolAsStr(enabled))
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+	return c.n_post("/settings/stats", []byte(data.Encode()), headers)
+}

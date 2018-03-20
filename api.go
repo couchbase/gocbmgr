@@ -370,3 +370,11 @@ func (c *Couchbase) ReloadNodeCert() error {
 func (c *Couchbase) SetClientCertAuth(settings *ClientCertAuth) error {
 	return c.setClientCertAuth(settings)
 }
+
+func (c *Couchbase) GetUpdatesEnabled() (bool, error) {
+	return c.getUpdatesEnabled()
+}
+
+func (c *Couchbase) SetUpdatesEnabled(enabled bool) error {
+	return c.setUpdatesEnabled(enabled)
+}
