@@ -265,6 +265,11 @@ func (c *Couchbase) GetIndexSettings() (*IndexSettings, error) {
 	return c.getIndexSettings()
 }
 
+func (c *Couchbase) SetIndexSettings(settings *IndexSettings) error {
+	return c.setIndexSettings(settings.StorageMode, settings.Threads, settings.MemSnapInterval,
+		settings.StableSnapInterval, settings.MaxRollbackPoints, settings.LogLevel)
+}
+
 func (c *Couchbase) GetNodeInfo() (*NodeInfo, error) {
 	return c.getNodeInfo()
 }
