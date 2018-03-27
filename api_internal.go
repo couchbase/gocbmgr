@@ -2,9 +2,12 @@ package cbmgr
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/couchbase/gocbmgr/urlencoding"
 )
 
 func (c *Couchbase) addNode(hostname, username, password string, services ServiceList) error {
@@ -307,4 +310,32 @@ func (c *Couchbase) setUpdatesEnabled(enabled bool) error {
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
 	return c.n_post("/settings/stats", []byte(data.Encode()), headers)
+}
+
+func (c *Couchbase) getAlternateAddressesExternal() (*AlternateAddressesExternal, error) {
+	info, err := c.getPoolsDefault()
+	if err != nil {
+		return nil, err
+	}
+	for _, node := range info.Nodes {
+		if node.ThisNode {
+			return &node.AlternateAddresses.External, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to locate alternate addresses for this node")
+}
+
+func (c *Couchbase) setAlternateAddressesExternal(addresses *AlternateAddressesExternal) error {
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+	data, err := urlencoding.Marshal(addresses)
+	if err != nil {
+		return err
+	}
+	return c.n_put("/node/controller/setupAlternateAddresses/external", data, headers)
+}
+
+func (c *Couchbase) deleteAlternateAddressesExternal() error {
+	headers := c.defaultHeaders()
+	return c.n_delete("/node/controller/setupAlternateAddresses/external", headers)
 }

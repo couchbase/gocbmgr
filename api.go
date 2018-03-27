@@ -378,3 +378,15 @@ func (c *Couchbase) GetUpdatesEnabled() (bool, error) {
 func (c *Couchbase) SetUpdatesEnabled(enabled bool) error {
 	return c.setUpdatesEnabled(enabled)
 }
+
+func (c *Couchbase) GetAlternateAddressesExternal() (*AlternateAddressesExternal, error) {
+	return c.getAlternateAddressesExternal()
+}
+
+func (c *Couchbase) SetAlternateAddressesExternal(addresses *AlternateAddressesExternal) error {
+	return c.setAlternateAddressesExternal(addresses)
+}
+
+func (c *Couchbase) DeleteAlternateAddressesExternal() error {
+	return c.deleteAlternateAddressesExternal()
+}

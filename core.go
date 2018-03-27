@@ -278,6 +278,30 @@ func (c *Couchbase) n_post(path string, data []byte, headers http.Header) error 
 	return BulkError{errs}
 }
 
+func (c *Couchbase) n_put(path string, data []byte, headers http.Header) error {
+	errs := []error{}
+	for _, endpoint := range c.endpoints {
+		req, err := http.NewRequest("PUT", endpoint+path, bytes.NewBuffer(data))
+		if err != nil {
+			return ClientError{"request creation", err}
+		}
+		req.Header = headers
+
+		response, err := c.client.Do(req)
+		if err != nil {
+			errs = append(errs, err)
+		} else {
+			if rerr := c.n_handleResponse(response, nil); rerr != nil {
+				errs = append(errs, rerr)
+			} else {
+				return nil
+			}
+		}
+	}
+
+	return BulkError{errs}
+}
+
 func (c *Couchbase) n_delete(path string, headers http.Header) error {
 	errs := []error{}
 	for _, endpoint := range c.endpoints {

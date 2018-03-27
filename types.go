@@ -106,16 +106,58 @@ type AutoFailoverSettings struct {
 	Count   uint8  `json:"count"`
 }
 
+type AlternateAddressesExternalPorts struct {
+        // AdminPort is the admin service K8S node port (mapped to 8091)
+        AdminServicePort int32 `url:"mgmt,omitempty" json:"mgmt"`
+        // AdminPortSSL is the admin service K8S node port (mapped to 18091)
+        AdminServicePortTLS int32 `url:"mgmtSSL,omitempty" json:"mgmtSSL"`
+        // ViewServicePort is the view service K8S node port (mapped to 8092)
+        ViewServicePort int32 `url:"capi,omitempty" json:"capi"`
+        // ViewServicePortSSL is the view service K8S node port (mapped to 8092)
+        ViewServicePortTLS int32 `url:"capiSSL,omitempty" json:"capiSSL"`
+        // QueryServicePort is the query service K8S node port (mapped to 8093)
+        QueryServicePort int32 `url:"n1ql,omitempty" json:"n1ql"`
+        // QueryServicePortTLS is the query service K8S node port (mapped to 18093)
+        QueryServicePortTLS int32 `url:"n1qlSSL,omitempty" json:"n1qlSSL"`
+        // FtsServicePort is the full text search service K8S node port (mapped to 8094)
+        FtsServicePort int32 `url:"fts,omitempty" json:"fts"`
+        // FtsServicePortTLS is the full text search service K8S node port (mapped to 18094)
+        FtsServicePortTLS int32 `url:"ftsSSL,omitempty" json:"ftsSSL"`
+        // AnalyticsServicePort is the analytics service K8S node port (mapped to 8095)
+        AnalyticsServicePort int32 `url:"cbas,omitempty" json:"cbas"`
+        // AnalyticsServicePortTLS is the analytics service K8S node port (mapped to 18095)
+        AnalyticsServicePortTLS int32 `url:"cbasSSL,omitempty" json:"cbasSSL"`
+        // DataServicePort is the data service K8S node port (mapped to 11210)
+        DataServicePort int32 `url:"kv,omitempty" json:"kv"`
+        // DataServicePortSSL is the data service K8S node port (mapped to 11207)
+        DataServicePortTLS int32 `url:"kvSSL,omitempty" json:"kvSSL"`
+}
+
+// AlternateAddresses defines a K8S node address and port mapping for
+// use by clients outside of the pod network.  Hostname must be set,
+// ports are ignored if zero.
+type AlternateAddressesExternal struct {
+        // Hostname is the host name to connect to (typically a L3 address)
+        Hostname string `url:"hostname" json:"hostname"`
+        // Ports is the map of service to external ports
+        Ports AlternateAddressesExternalPorts `url:"" json:"ports"`
+}
+
+type AlternateAddresses struct {
+	External AlternateAddressesExternal `json:"external"`
+}
+
 type NodeInfo struct {
-	ThisNode         bool                 `json:"thisNode"`
-	Uptime           string               `json:"uptime"`
-	Membership       string               `json:"clusterMembership"`
-	RecoveryType     string               `json:"recoveryType"`
-	Status           string               `json:"status"`
-	OTPNode          string               `json:"otpNode"`
-	HostName         string               `json:"hostname"`
-	Services         []string             `json:"services"`
-	AvailableStorage AvailableStorageInfo `json:"storage"`
+	ThisNode           bool                 `json:"thisNode"`
+	Uptime             string               `json:"uptime"`
+	Membership         string               `json:"clusterMembership"`
+	RecoveryType       string               `json:"recoveryType"`
+	Status             string               `json:"status"`
+	OTPNode            string               `json:"otpNode"`
+	HostName           string               `json:"hostname"`
+	Services           []string             `json:"services"`
+	AvailableStorage   AvailableStorageInfo `json:"storage"`
+	AlternateAddresses AlternateAddresses   `json:"alternateAddresses"`
 }
 
 type AvailableStorageInfo map[AvailableStorageType][]StorageInfo
