@@ -351,3 +351,13 @@ func (c *Couchbase) getLogs() ([]*LogMessage, error) {
 	}
 	return nil, NewErrorInvalidLogList()
 }
+
+func (c *Couchbase) logClientError(msg string) error {
+	data := url.Values{}
+	data.Set("error", msg)
+
+	headers := c.defaultHeaders()
+	headers.Set("Content-Type", ContentTypeUrlEncoded)
+
+	return c.n_post("/logClientError", []byte(data.Encode()), headers)
+}

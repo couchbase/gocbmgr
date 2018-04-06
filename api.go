@@ -399,3 +399,7 @@ func (c *Couchbase) DeleteAlternateAddressesExternal() error {
 func (c *Couchbase) GetLogs() ([]*LogMessage, error) {
 	return c.getLogs()
 }
+
+func (c *Couchbase) LogClientError(msg string) error {
+	return c.logClientError(msg)
+}
