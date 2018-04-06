@@ -224,6 +224,18 @@ type VBucketServerMap struct {
 
 type VBucketMap [][]int
 
+type LogMessage struct {
+	Node       string `json:"node"`
+	Type       string `json:"type"`
+	Code       uint8  `json:"code"`
+	Module     string `json:"module"`
+	Tstamp     uint64 `json:"tstamp"`
+	ShortText  string `json:"shortText"`
+	Text       string `json:"text"`
+	ServerTime string `json:"serverTime"`
+}
+type LogList map[string][]*LogMessage
+
 func (s *BucketStatus) GetIoPriority() IoPriorityType {
 	threadCount := s.ThreadsNumber
 

@@ -395,3 +395,7 @@ func (c *Couchbase) SetAlternateAddressesExternal(addresses *AlternateAddressesE
 func (c *Couchbase) DeleteAlternateAddressesExternal() error {
 	return c.deleteAlternateAddressesExternal()
 }
+
+func (c *Couchbase) GetLogs() ([]*LogMessage, error) {
+	return c.getLogs()
+}

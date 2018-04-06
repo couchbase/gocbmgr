@@ -38,6 +38,10 @@ func NewErrorClusterNodeNotFound(name string) error {
 	return emsg
 }
 
+func NewErrorInvalidLogList() error {
+	return fmt.Errorf("cluster logs missing 'list' key")
+}
+
 // Returns true if two errors are equal
 func ErrCompare(e1, e2 error) bool {
 	return strings.Compare(e1.Error(), e2.Error()) == 0

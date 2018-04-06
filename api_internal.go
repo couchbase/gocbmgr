@@ -339,3 +339,15 @@ func (c *Couchbase) deleteAlternateAddressesExternal() error {
 	headers := c.defaultHeaders()
 	return c.n_delete("/node/controller/setupAlternateAddresses/external", headers)
 }
+
+func (c *Couchbase) getLogs() ([]*LogMessage, error) {
+	body := make(LogList)
+	if err := c.n_get("/logs", &body, c.defaultHeaders()); err != nil {
+		return nil, err
+	}
+
+	if logs, ok := body["list"]; ok {
+		return logs, nil
+	}
+	return nil, NewErrorInvalidLogList()
+}
