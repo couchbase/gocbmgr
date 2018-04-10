@@ -234,7 +234,19 @@ type LogMessage struct {
 	Text       string `json:"text"`
 	ServerTime string `json:"serverTime"`
 }
-type LogList map[string][]*LogMessage
+type LogList []*LogMessage
+
+func (li LogList) Len() int {
+	return len(li)
+}
+
+func (li LogList) Less(i, j int) bool {
+	return li[i].Tstamp < li[j].Tstamp
+}
+
+func (li LogList) Swap(i, j int) {
+	li[i], li[j] = li[j], li[i]
+}
 
 func (s *BucketStatus) GetIoPriority() IoPriorityType {
 	threadCount := s.ThreadsNumber
