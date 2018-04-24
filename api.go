@@ -403,3 +403,15 @@ func (c *Couchbase) GetLogs() ([]*LogMessage, error) {
 func (c *Couchbase) LogClientError(msg string) error {
 	return c.logClientError(msg)
 }
+
+func (c *Couchbase) GetServerGroups() (*ServerGroups, error) {
+	return c.getServerGroups()
+}
+
+func (c *Couchbase) CreateServerGroup(name string) error {
+	return c.createServerGroup(name)
+}
+
+func (c *Couchbase) UpdateServerGroups(revision string, groups *ServerGroupsUpdate) error {
+	return c.updateServerGroups(revision, groups)
+}

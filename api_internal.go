@@ -361,3 +361,30 @@ func (c *Couchbase) logClientError(msg string) error {
 
 	return c.n_post("/logClientError", []byte(data.Encode()), headers)
 }
+
+func (c *Couchbase) getServerGroups() (*ServerGroups, error) {
+	serverGroups := &ServerGroups{}
+	if err := c.n_get("/pools/default/serverGroups", serverGroups, c.defaultHeaders()); err != nil {
+		return nil, err
+	}
+	return serverGroups, nil
+}
+
+func (c *Couchbase) createServerGroup(name string) error {
+	data := url.Values{}
+	data.Set("name", name)
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+	return c.n_post("/pools/default/serverGroups", []byte(data.Encode()), headers)
+}
+
+func (c *Couchbase) updateServerGroups(revision string, groups *ServerGroupsUpdate) error {
+	data, err := json.Marshal(groups)
+	if err != nil {
+		return err
+	}
+	uri := "/pools/default/serverGroups?rev=" + revision
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeJSON)
+	return c.n_put(uri, data, headers)
+}

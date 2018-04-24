@@ -348,3 +348,57 @@ type SettingsStats struct {
 	// SendStats actually indicates whether to perform software update checks
 	SendStats bool `json:"sendStats"`
 }
+
+// ServerGroup is a map from name to a list of nodes
+type ServerGroup struct {
+	// Name is the human readable server group name
+	Name string `json:"name"`
+	// Nodes is a list of nodes who are members of the server group
+	Nodes []NodeInfo `json:"nodes"`
+	// URI is used to refer to a server group
+	URI string `json:"uri"`
+}
+
+// ServerGroups is returned by /nodes/default/serverGroups
+type ServerGroups struct {
+	// Groups is a list of ServerGroup objects
+	Groups []ServerGroup `json:"groups"`
+	// URI is the URI used to update server groups
+	URI string `json:"uri"`
+}
+
+// GetRevision returns the server group revision ID (for CAS)
+func (groups ServerGroups) GetRevision() string {
+	// Expected to be /pools/default/serverGroups?rev=13585112
+	return strings.Split(groups.URI, "=")[1]
+}
+
+// GetServerGroup looks up a server group by name
+func (groups ServerGroups) GetServerGroup(name string) *ServerGroup {
+	for _, group := range groups.Groups {
+		if group.Name == name {
+			return &group
+		}
+	}
+	return nil
+}
+
+// ServerGroupUpdateOTPNode defines a single node is OTP notation
+type ServerGroupUpdateOTPNode struct {
+	OTPNode string `json:"otpNode"`
+}
+
+// ServerGroupUpdate defines a server group and its nodes
+type ServerGroupUpdate struct {
+	// Name is the group name and must match the existing one
+	Name string `json:"name",omitempty`
+	// URI is the same as returned in ServerGroup
+	URI string `json:"uri"`
+	// Nodes is a list of OTP nodes
+	Nodes []ServerGroupUpdateOTPNode `json:"nodes"`
+}
+
+// ServerGroupsUpdate is used to move nodes between server groups
+type ServerGroupsUpdate struct {
+	Groups []ServerGroupUpdate `json:"groups"`
+}

@@ -19,6 +19,7 @@ import (
 
 const (
 	ContentTypeUrlEncoded string = "application/x-www-form-urlencoded"
+	ContentTypeJSON       string = "application/json"
 
 	HeaderAuthorization string = "Authorization"
 	HeaderContentType   string = "Content-Type"
