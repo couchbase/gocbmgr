@@ -46,10 +46,12 @@ const (
 type ServiceName string
 
 const (
-	DataService   ServiceName = "kv"
-	IndexService  ServiceName = "index"
-	QueryService  ServiceName = "n1ql"
-	SearchService ServiceName = "fts"
+	DataService      ServiceName = "kv"
+	IndexService     ServiceName = "index"
+	QueryService     ServiceName = "n1ql"
+	SearchService    ServiceName = "fts"
+	EventingService  ServiceName = "eventing"
+	AnalyticsService ServiceName = "cbas"
 )
 
 type ServiceList []ServiceName
@@ -65,6 +67,10 @@ func ServiceListFromStringArray(arr []string) (ServiceList, error) {
 			list = append(list, QueryService)
 		} else if svc == "fts" || svc == "search" {
 			list = append(list, SearchService)
+		} else if svc == "eventing" {
+			list = append(list, EventingService)
+		} else if svc == "cbas" || svc == "analytics" {
+			list = append(list, AnalyticsService)
 		} else {
 			return list, fmt.Errorf("Invalid service name: %s", svc)
 		}
