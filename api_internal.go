@@ -120,7 +120,7 @@ func (c *Couchbase) setMemoryQuota(id string, quota int) error {
 func (c *Couchbase) setStoragePaths(dataPath, indexPath string) error {
 	data := url.Values{}
 	data.Set("path", dataPath)
-	data.Set("indexPath", indexPath)
+	data.Set("index_path", indexPath)
 
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
