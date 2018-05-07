@@ -388,3 +388,14 @@ func (c *Couchbase) updateServerGroups(revision string, groups *ServerGroupsUpda
 	headers.Set(HeaderContentType, ContentTypeJSON)
 	return c.n_put(uri, data, headers)
 }
+
+func (c *Couchbase) setRecoveryType(otpNode string, recoveryType RecoveryType) error {
+
+	data := url.Values{}
+	data.Set("otpNode", otpNode)
+	data.Set("recoveryType", string(recoveryType))
+	headers := c.defaultHeaders()
+	headers.Set("Content-Type", ContentTypeUrlEncoded)
+
+	return c.n_post("/controller/setRecoveryType", []byte(data.Encode()), headers)
+}

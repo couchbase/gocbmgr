@@ -415,3 +415,17 @@ func (c *Couchbase) CreateServerGroup(name string) error {
 func (c *Couchbase) UpdateServerGroups(revision string, groups *ServerGroupsUpdate) error {
 	return c.updateServerGroups(revision, groups)
 }
+
+func (c *Couchbase) SetRecoveryType(hostname string, recoveryType RecoveryType) error {
+	cluster, err := c.getPoolsDefault()
+	if err != nil {
+		return err
+	}
+
+	for _, node := range cluster.Nodes {
+		if node.HostName == hostname {
+			return c.setRecoveryType(node.OTPNode, recoveryType)
+		}
+	}
+	return fmt.Errorf("Hostname %s is not part of the cluster", hostname)
+}

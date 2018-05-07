@@ -87,6 +87,13 @@ func (s ServiceList) String() string {
 	return strings.Join(strs, ",")
 }
 
+type RecoveryType string
+
+const (
+	RecoveryTypeDelta RecoveryType = "delta"
+	RecoveryTypeFull               = "full"
+)
+
 type ClusterInfo struct {
 	SearchMemoryQuotaMB int        `json:"ftsMemoryQuota"`
 	IndexMemoryQuotaMB  int        `json:"indexMemoryQuota"`
