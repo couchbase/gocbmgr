@@ -219,6 +219,7 @@ func (c *Couchbase) makeClient() {
 
 	// Create the basic client configuration to support HTTP
 	client := &http.Client{
+		Timeout: 30 * time.Second,
 		Transport: &http.Transport{
 			DialContext:  dialContext,
 			DialTLS:      dialTLS,
