@@ -24,6 +24,8 @@ const (
 	HeaderAuthorization string = "Authorization"
 	HeaderContentType   string = "Content-Type"
 	HeaderUserAgent     string = "User-Agent"
+
+	tcpConnectTimeout = 5 * time.Second
 )
 
 type BulkError struct {
@@ -154,7 +156,7 @@ func (c *Couchbase) makeClient() {
 	dialContext := func(ctx context.Context, network, addr string) (net.Conn, error) {
 		// Establish a TCP connection
 		dialer := &net.Dialer{
-			Timeout:   30 * time.Second,
+			Timeout:   tcpConnectTimeout,
 			KeepAlive: 30 * time.Second,
 			DualStack: true,
 		}
@@ -200,7 +202,7 @@ func (c *Couchbase) makeClient() {
 
 		// Establish a TCP connection with TLS transport
 		dialer := &net.Dialer{
-			Timeout:   30 * time.Second,
+			Timeout:   tcpConnectTimeout,
 			KeepAlive: 30 * time.Second,
 			DualStack: true,
 		}
