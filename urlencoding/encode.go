@@ -13,8 +13,12 @@ func isEmptyValue(v reflect.Value) bool {
 	switch v.Kind() {
 	case reflect.String:
 		return v.String() == ""
-	case reflect.Int32:
+	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return v.Int() == 0
+	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return v.Uint() == 0
+	case reflect.Bool:
+		return v.Bool() == false
 	}
 	return false
 }
@@ -24,8 +28,12 @@ func encode(v reflect.Value) (string, error) {
 	switch v.Kind() {
 	case reflect.String:
 		return v.String(), nil
-	case reflect.Int32:
-		return strconv.Itoa(int(v.Int())), nil
+	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(v.Int(), 10), nil
+	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return strconv.FormatUint(v.Uint(), 10), nil
+	case reflect.Bool:
+		return strconv.FormatBool(v.Bool()), nil
 	}
 	return "", fmt.Errorf("unsupported type %s", v.Type().Name())
 }

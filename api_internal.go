@@ -234,19 +234,17 @@ func (c *Couchbase) getBuckets() ([]*Bucket, error) {
 	return buckets, nil
 }
 
-// Autofailover settings with specified timeout
-func (c *Couchbase) setAutoFailoverTimeout(enabled bool, timeout uint64) error {
-
-	data := url.Values{}
-	data.Set("enabled", BoolAsStr(enabled))
-	if enabled {
-		data.Set("timeout", strconv.FormatUint(timeout, 10))
-	}
-
+// Autofailover settings with specified timeouts
+func (c *Couchbase) setAutoFailoverSettings(settings *AutoFailoverSettings) error {
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
 
-	return c.n_post("/settings/autoFailover", []byte(data.Encode()), headers)
+	data, err := urlencoding.Marshal(settings)
+	if err != nil {
+		return err
+	}
+
+	return c.n_post("/settings/autoFailover", data, headers)
 }
 
 func (c *Couchbase) getAutoFailoverSettings() (*AutoFailoverSettings, error) {

@@ -113,10 +113,17 @@ type IndexSettings struct {
 	LogLevel           IndexLogLevel    `json:"logLevel"`
 }
 
+type FailoverOnDiskFailureSettings struct {
+	Enabled    bool   `url:"failoverOnDataDiskIssues[enabled]" json:"enabled"`
+	TimePeriod uint64 `url:"failoverOnDataDiskIssues[timePeriod]" json:"timePeriod"`
+}
+
 type AutoFailoverSettings struct {
-	Enabled bool   `json:"enabled"`
-	Timeout uint64 `json:"timeout"`
-	Count   uint8  `json:"count"`
+	Enabled                  bool                          `url:"enabled" json:"enabled"`
+	Timeout                  uint64                        `url:"timeout" json:"timeout"`
+	Count                    uint8                         `json:"count"`
+	FailoverOnDataDiskIssues FailoverOnDiskFailureSettings `url:"" json:"failoverOnDataDiskIssues"`
+	FailoverServerGroup      bool                          `url:"failoverServerGroup" json:"failoverServerGroup"`
 }
 
 type AlternateAddressesExternalPorts struct {
