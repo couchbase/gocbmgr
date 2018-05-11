@@ -124,6 +124,7 @@ type AutoFailoverSettings struct {
 	Count                    uint8                         `json:"count"`
 	FailoverOnDataDiskIssues FailoverOnDiskFailureSettings `url:"" json:"failoverOnDataDiskIssues"`
 	FailoverServerGroup      bool                          `url:"failoverServerGroup" json:"failoverServerGroup"`
+	MaxCount                 uint64                        `url:"maxCount" json:"maxCount"`
 }
 
 type AlternateAddressesExternalPorts struct {
