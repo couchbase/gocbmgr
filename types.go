@@ -95,13 +95,27 @@ const (
 )
 
 type ClusterInfo struct {
-	SearchMemoryQuotaMB int        `json:"ftsMemoryQuota"`
-	IndexMemoryQuotaMB  int        `json:"indexMemoryQuota"`
-	DataMemoryQuotaMB   int        `json:"memoryQuota"`
-	Nodes               []NodeInfo `json:"nodes"`
-	RebalanceStatus     string     `json:"rebalanceStatus"`
-	ClusterName         string     `json:"clusterName"`
-	Balanced            bool       `json:"balanced"`
+	SearchMemoryQuotaMB    uint64     `json:"ftsMemoryQuota"`
+	IndexMemoryQuotaMB     uint64     `json:"indexMemoryQuota"`
+	DataMemoryQuotaMB      uint64     `json:"memoryQuota"`
+	EventingMemoryQuotaMB  uint64     `json:"eventingMemoryQuota"`
+	AnalyticsMemoryQuotaMB uint64     `json:"cbasMemoryQuota"`
+	Nodes                  []NodeInfo `json:"nodes"`
+	RebalanceStatus        string     `json:"rebalanceStatus"`
+	ClusterName            string     `json:"clusterName"`
+	Balanced               bool       `json:"balanced"`
+}
+
+// PoolsDefaults returns a struct which could be used with the /pools/default API
+func (c *ClusterInfo) PoolsDefaults() *PoolsDefaults {
+	return &PoolsDefaults{
+		ClusterName:          c.ClusterName,
+		DataMemoryQuota:      c.DataMemoryQuotaMB,
+		IndexMemoryQuota:     c.IndexMemoryQuotaMB,
+		SearchMemoryQuota:    c.SearchMemoryQuotaMB,
+		EventingMemoryQuota:  c.EventingMemoryQuotaMB,
+		AnalyticsMemoryQuota: c.AnalyticsMemoryQuotaMB,
+	}
 }
 
 type IndexSettings struct {
@@ -197,6 +211,16 @@ type Task struct {
 	Progress float64 `json:"progress"`
 	Type     string  `json:"type"`
 	Status   string  `json:"status"`
+}
+
+// PoolsDefaults is the data that may be posted via the /pools/default API
+type PoolsDefaults struct {
+	ClusterName          string `url:"clusterName,omitempty"`
+	DataMemoryQuota      uint64 `url:"memoryQuota,omitempty"`
+	IndexMemoryQuota     uint64 `url:"indexMemoryQuota,omitempty"`
+	SearchMemoryQuota    uint64 `url:"ftsMemoryQuota,omitempty"`
+	EventingMemoryQuota  uint64 `url:"eventingMemoryQuota,omitempty"`
+	AnalyticsMemoryQuota uint64 `url:"cbasMemoryQuota,omitempty"`
 }
 
 type IoPriorityType string

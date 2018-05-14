@@ -84,29 +84,16 @@ func (c *Couchbase) failover(otpNode string) error {
 	return c.n_post("/controller/failOver", []byte(data.Encode()), headers)
 }
 
-func (c *Couchbase) setPoolsDefault(name string, dataMemQuotaMB, indexMemQuotaMB, searchMemQuotaMB int) error {
-	data := url.Values{}
-	data.Set("memoryQuota", strconv.Itoa(dataMemQuotaMB))
-	data.Set("indexMemoryQuota", strconv.Itoa(indexMemQuotaMB))
-	data.Set("ftsMemoryQuota", strconv.Itoa(searchMemQuotaMB))
-	data.Set("clusterName", name)
-
+func (c *Couchbase) setPoolsDefault(defaults *PoolsDefaults) error {
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
 
-	return c.n_post("/pools/default", []byte(data.Encode()), headers)
-}
+	data, err := urlencoding.Marshal(defaults)
+	if err != nil {
+		return err
+	}
 
-func (c *Couchbase) setDataMemoryQuota(quota int) error {
-	return c.setMemoryQuota("memoryQuota", quota)
-}
-
-func (c *Couchbase) setIndexMemoryQuota(quota int) error {
-	return c.setMemoryQuota("indexMemoryQuota", quota)
-}
-
-func (c *Couchbase) setSearchMemoryQuota(quota int) error {
-	return c.setMemoryQuota("ftsMemoryQuota", quota)
+	return c.n_post("/pools/default", data, headers)
 }
 
 func (c *Couchbase) setMemoryQuota(id string, quota int) error {

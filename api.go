@@ -183,14 +183,14 @@ func (c *Couchbase) ClusterInfo() (*ClusterInfo, error) {
 	return c.getPoolsDefault()
 }
 
-func (c *Couchbase) SetPoolsDefault(name string, dataMemQuotaMB, indexMemQuotaMB, searchMemQuotaMB int) error {
-	return c.setPoolsDefault(name, dataMemQuotaMB, indexMemQuotaMB, searchMemQuotaMB)
+func (c *Couchbase) SetPoolsDefault(defaults *PoolsDefaults) error {
+	return c.setPoolsDefault(defaults)
 }
 
-func (c *Couchbase) ClusterInitialize(username, password, name string, dataMemQuotaMB, indexMemQuotaMB,
-	searchMemQuotaMB, port int, services []ServiceName, mode IndexStorageMode) error {
+func (c *Couchbase) ClusterInitialize(username, password string, defaults *PoolsDefaults,
+	port int, services []ServiceName, mode IndexStorageMode) error {
 
-	if err := c.setPoolsDefault(name, dataMemQuotaMB, indexMemQuotaMB, searchMemQuotaMB); err != nil {
+	if err := c.setPoolsDefault(defaults); err != nil {
 		return err
 	}
 
@@ -335,20 +335,8 @@ func (c *Couchbase) GetAutoFailoverSettings() (*AutoFailoverSettings, error) {
 	return c.getAutoFailoverSettings()
 }
 
-func (c *Couchbase) SetDataMemoryQuota(quota int) error {
-	return c.setDataMemoryQuota(quota)
-}
-
 func (c *Couchbase) ResetFailoverCounter() error {
 	return c.resetCount()
-}
-
-func (c *Couchbase) SetIndexMemoryQuota(quota int) error {
-	return c.setIndexMemoryQuota(quota)
-}
-
-func (c *Couchbase) SetSearchMemoryQuota(quota int) error {
-	return c.setSearchMemoryQuota(quota)
 }
 
 func (c *Couchbase) GetIndexSettings() (*IndexSettings, error) {
