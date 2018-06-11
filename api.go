@@ -227,12 +227,12 @@ func (c *Couchbase) ClusterUUID() (string, error) {
 	}
 }
 
-func (c *Couchbase) NodeInitialize(hostname, dataPath, indexPath string) error {
+func (c *Couchbase) NodeInitialize(hostname, dataPath, indexPath string, analyticsPaths []string) error {
 	if err := c.setHostname(hostname); err != nil {
 		return err
 	}
 
-	if err := c.setStoragePaths(dataPath, indexPath); err != nil {
+	if err := c.setStoragePaths(dataPath, indexPath, analyticsPaths); err != nil {
 		return err
 	}
 

@@ -104,11 +104,16 @@ func (c *Couchbase) setMemoryQuota(id string, quota int) error {
 	return c.n_post("/pools/default", []byte(data.Encode()), headers)
 }
 
-func (c *Couchbase) setStoragePaths(dataPath, indexPath string) error {
+func (c *Couchbase) setStoragePaths(dataPath, indexPath string, analyticsPaths []string) error {
 	data := url.Values{}
 	data.Set("path", dataPath)
 	data.Set("index_path", indexPath)
-
+	if len(analyticsPaths) > 0 {
+		data.Set("cbas_path", analyticsPaths[0])
+		for _, path := range analyticsPaths[1:] {
+			data.Add("cbas_path", path)
+		}
+	}
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
