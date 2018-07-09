@@ -179,6 +179,21 @@ func (c *Couchbase) CancelAddNode(hostname string) error {
 	return fmt.Errorf("Hostname %s is not part of the cluster", hostname)
 }
 
+func (c *Couchbase) CancelAddBackNode(hostname string) error {
+	cluster, err := c.getPoolsDefault()
+	if err != nil {
+		return err
+	}
+
+	for _, node := range cluster.Nodes {
+		if node.HostName == hostname {
+			return c.cancelAddBackNode(node.OTPNode)
+		}
+	}
+
+	return fmt.Errorf("Hostname %s is not part of the cluster", hostname)
+}
+
 func (c *Couchbase) ClusterInfo() (*ClusterInfo, error) {
 	return c.getPoolsDefault()
 }
