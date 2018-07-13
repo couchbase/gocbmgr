@@ -28,56 +28,6 @@ const (
 	tcpConnectTimeout = 5 * time.Second
 )
 
-type BulkError struct {
-	errs []error
-}
-
-func (e BulkError) Error() string {
-	rv := ""
-	for i, err := range e.errs {
-		rv += "[" + err.Error() + "]"
-		if i != (len(e.errs) - 1) {
-			rv += ", "
-		}
-	}
-	return rv
-}
-
-type ClientError struct {
-	reason string
-	err    error
-}
-
-func (e ClientError) Error() string {
-	return fmt.Sprintf("Client error `%s`: %s", e.reason, e.err.Error())
-}
-
-type NetworkError struct {
-	endpoint string
-	path     string
-	err      error
-}
-
-func (e NetworkError) Error() string {
-	return fmt.Sprintf("Network Error (%s%s): %s", e.endpoint, e.path, e.err.Error())
-}
-
-type ServerError struct {
-	errors   map[string]string
-	endpoint string
-	path     string
-	code     int
-}
-
-func (e ServerError) Error() string {
-	all := []string{}
-	for k, v := range e.errors {
-		all = append(all, k+" - "+v)
-	}
-
-	return fmt.Sprintf("Server Error %d (%s%s): %s", e.code, e.endpoint, e.path, all)
-}
-
 // newClient creates a new HTTP client which offers connection persistence and
 // also checks that the UUID of a host is what we expect when dialing before
 // allowing further HTTP requests.
