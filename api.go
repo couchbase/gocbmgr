@@ -342,6 +342,23 @@ func (c *Couchbase) GetBuckets() ([]*Bucket, error) {
 	return c.getBuckets()
 }
 
+func (c *Couchbase) GetBucket(bucketName string) (*Bucket, error) {
+	bucketList, err := c.getBuckets()
+	if err != nil {
+		return nil, err
+	}
+	for _, bucket := range bucketList {
+		if bucket.BucketName == bucketName {
+			return bucket, nil
+		}
+	}
+	return nil, fmt.Errorf("No such bucket: %s", bucketName)
+}
+
+func (c *Couchbase) InsertDoc(bucketObj *Bucket, docKey string, data []byte) error {
+	return c.insertDoc(bucketObj, docKey, data)
+}
+
 func (c *Couchbase) SetAutoFailoverSettings(settings *AutoFailoverSettings) error {
 	return c.setAutoFailoverSettings(settings)
 }

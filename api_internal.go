@@ -236,6 +236,13 @@ func (c *Couchbase) getBuckets() ([]*Bucket, error) {
 	return buckets, nil
 }
 
+func (c *Couchbase) insertDoc(bucket *Bucket, docKey string, docData []byte) error {
+	docUrl := "/pools/default/buckets/" + bucket.BucketName + "/docs/" + docKey
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, "application/x-www-form-urlencoded")
+	return c.n_post(docUrl, docData, headers)
+}
+
 // Autofailover settings with specified timeouts
 func (c *Couchbase) setAutoFailoverSettings(settings *AutoFailoverSettings) error {
 	headers := c.defaultHeaders()
