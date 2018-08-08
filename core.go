@@ -302,16 +302,12 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 			return ClientError{"unmarshal json response", err}
 		}
 
-		type errMapoverlay struct {
-			Errors map[string]string
-		}
-
 		var errMapData errMapoverlay
 		decoder := json.NewDecoder(bytes.NewReader(data))
 		decoder.UseNumber()
 		err = decoder.Decode(&errMapData)
 		if err == nil {
-			return ServerError{errMapData.Errors, host, path, response.StatusCode}
+			return ServerError{errMapData.ErrorMap(), host, path, response.StatusCode}
 		}
 
 		var listData []string
