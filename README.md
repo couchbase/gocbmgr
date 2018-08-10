@@ -1,1 +1,1 @@
-[GoDoc](https://godoc.org/github.com/couchbase/gocbmgr?status.png)](https://godoc.org/github.com/couchbase/gocbmgr)
+![GoDoc](https://godoc.org/github.com/couchbase/gocbmgr?status.png)](https://godoc.org/github.com/couchbase/gocbmgr)
