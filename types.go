@@ -211,6 +211,8 @@ type Task struct {
 	Progress float64 `json:"progress"`
 	Type     string  `json:"type"`
 	Status   string  `json:"status"`
+	Stale    bool    `json:"statusIsStale"`
+	Timeout  bool    `json:"masterRequestTimedOut"`
 }
 
 // PoolsDefaults is the data that may be posted via the /pools/default API
