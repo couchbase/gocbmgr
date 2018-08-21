@@ -11,7 +11,6 @@ import (
 const (
 	RebalanceStatusNotRunning string = "notRunning"
 	RebalanceStatusRunning    string = "running"
-	RebalanceStatusStale      string = "stale"
 )
 
 type IndexStorageMode string

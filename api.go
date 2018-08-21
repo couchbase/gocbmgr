@@ -141,7 +141,7 @@ func (r *RebalanceProgress) Wait() error {
 					if logger != nil {
 						logger.Infof("Rebalance progress: unknown")
 					}
-				} else if task.Status == RebalanceStatusNotRunning || task.Status == RebalanceStatusStale {
+				} else if task.Status == RebalanceStatusNotRunning {
 					isRunning = false
 				} else if task.Status == RebalanceStatusRunning {
 					logger := (*logrus.Entry)(atomic.LoadPointer((*unsafe.Pointer)((unsafe.Pointer)(&r.logger))))
