@@ -483,3 +483,12 @@ func (c *Couchbase) SetRecoveryType(hostname string, recoveryType RecoveryType) 
 	}
 	return fmt.Errorf("Hostname %s is not part of the cluster", hostname)
 }
+
+func (c *Couchbase) SetLogLevel(level string) error {
+	lvl, err := logrus.ParseLevel(level)
+	if err != nil {
+		return err
+	}
+	logrus.SetLevel(lvl)
+	return nil
+}
