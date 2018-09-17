@@ -129,32 +129,61 @@ type RebalanceProgress struct {
 func (r *RebalanceProgress) Wait() error {
 	isRunning := true
 	for isRunning && !r.cancelled.Load() {
-		tasks, err := r.client.getTasks()
+		task, err := r.GetRebalanceTaskStatus()
 		if err != nil {
 			return err
 		}
 
-		for _, task := range tasks {
-			if task.Type == "rebalance" {
-				if task.Stale || task.Timeout {
-					logger := (*logrus.Entry)(atomic.LoadPointer((*unsafe.Pointer)((unsafe.Pointer)(&r.logger))))
-					if logger != nil {
-						logger.Infof("Rebalance progress: unknown")
-					}
-				} else if task.Status == RebalanceStatusNotRunning {
-					isRunning = false
-				} else if task.Status == RebalanceStatusRunning {
-					logger := (*logrus.Entry)(atomic.LoadPointer((*unsafe.Pointer)((unsafe.Pointer)(&r.logger))))
-					if logger != nil {
-						logger.Infof("Rebalance progress: %f", task.Progress)
-					}
-				}
+		switch task.Status {
+		case RebalanceStatusUnknown:
+			logger := (*logrus.Entry)(atomic.LoadPointer((*unsafe.Pointer)((unsafe.Pointer)(&r.logger))))
+			if logger != nil {
+				logger.Infof("Rebalance progress: unknown")
+			}
+		case RebalanceStatusNotRunning:
+			isRunning = false
+		case RebalanceStatusRunning:
+			logger := (*logrus.Entry)(atomic.LoadPointer((*unsafe.Pointer)((unsafe.Pointer)(&r.logger))))
+			if logger != nil {
+				logger.Infof("Rebalance progress: %f", task.Progress)
 			}
 		}
 		time.Sleep(r.interval)
 	}
 
 	return nil
+}
+
+// Get status of rebalance from list of cluster tasks
+func (r *RebalanceProgress) GetRebalanceTaskStatus() (*RebalanceTaskStatus, error) {
+	tasks, err := r.client.getTasks()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, task := range tasks {
+		if task.Type == "rebalance" {
+			if task.Stale || task.Timeout {
+				return &RebalanceTaskStatus{Status: RebalanceStatusUnknown}, nil
+			}
+			switch RebalanceStatus(task.Status) {
+			case RebalanceStatusNotRunning:
+				return &RebalanceTaskStatus{Status: RebalanceStatusNotRunning}, nil
+			case RebalanceStatusNone:
+				// interpreting rebalance with status 'none' as not running
+				return &RebalanceTaskStatus{Status: RebalanceStatusNotRunning}, nil
+			case RebalanceStatusRunning:
+				return &RebalanceTaskStatus{
+					Status:   RebalanceStatusRunning,
+					Progress: task.Progress,
+				}, nil
+			default:
+				return nil, fmt.Errorf("Unexpected rebalance status: %s", task.Status)
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("Failed to find task for rebalance status")
 }
 
 func (r *RebalanceProgress) SetLogger(logger *logrus.Entry) {

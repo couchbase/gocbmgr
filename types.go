@@ -8,10 +8,19 @@ import (
 	"strings"
 )
 
+type RebalanceStatus string
+
 const (
-	RebalanceStatusNotRunning string = "notRunning"
-	RebalanceStatusRunning    string = "running"
+	RebalanceStatusNotRunning RebalanceStatus = "notRunning"
+	RebalanceStatusRunning    RebalanceStatus = "running"
+	RebalanceStatusUnknown    RebalanceStatus = "unknown"
+	RebalanceStatusNone       RebalanceStatus = "none"
 )
+
+type RebalanceTaskStatus struct {
+	Status   RebalanceStatus
+	Progress float64
+}
 
 type IndexStorageMode string
 
