@@ -313,6 +313,20 @@ func (c *Couchbase) Rebalance(nodesToRemove []string) (*RebalanceProgress, error
 	return &RebalanceProgress{c, newAtomicBool(false), nil, 4 * time.Second}, nil
 }
 
+// Compare status of rebalance with an expected status
+func (c *Couchbase) CompareRebalanceStatus(expectedStatus RebalanceStatus) (bool, error) {
+	progress := &RebalanceProgress{c, nil, nil, 4 * time.Second}
+	task, err := progress.GetRebalanceTaskStatus()
+	if err != nil {
+		return false, err
+	}
+	return task.Status == expectedStatus, nil
+}
+
+func (c *Couchbase) StopRebalance() error {
+	return c.stopRebalance()
+}
+
 func (c *Couchbase) Failover(nodeToRemove string) error {
 	cluster, err := c.getPoolsDefault()
 	if err != nil {

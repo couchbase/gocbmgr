@@ -84,6 +84,15 @@ func (c *Couchbase) rebalance(allNodes, ejectNodes []string) error {
 	return c.n_post("/controller/rebalance", []byte(data.Encode()), headers)
 }
 
+func (c *Couchbase) stopRebalance() error {
+	data := url.Values{}
+
+	headers := c.defaultHeaders()
+	headers.Set("Content-Type", ContentTypeUrlEncoded)
+
+	return c.n_post("/controller/stopRebalance", []byte(data.Encode()), headers)
+}
+
 func (c *Couchbase) failover(otpNode string) error {
 	data := url.Values{}
 	data.Set("otpNode", otpNode)
