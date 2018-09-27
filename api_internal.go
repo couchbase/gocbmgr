@@ -86,7 +86,7 @@ func (c *Couchbase) rebalance(allNodes, ejectNodes []string) error {
 
 func (c *Couchbase) stopRebalance() error {
 	data := url.Values{}
-
+	data.Set("allowUnsafe", "true")
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
