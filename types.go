@@ -183,11 +183,11 @@ type AlternateAddressesExternal struct {
 	// Hostname is the host name to connect to (typically a L3 address)
 	Hostname string `url:"hostname" json:"hostname"`
 	// Ports is the map of service to external ports
-	Ports AlternateAddressesExternalPorts `url:"" json:"ports"`
+	Ports *AlternateAddressesExternalPorts `url:"" json:"ports,omitempty"`
 }
 
 type AlternateAddresses struct {
-	External AlternateAddressesExternal `json:"external"`
+	External *AlternateAddressesExternal `json:"external,omitempty"`
 }
 
 type NodeInfo struct {
@@ -200,7 +200,7 @@ type NodeInfo struct {
 	HostName           string               `json:"hostname"`
 	Services           []string             `json:"services"`
 	AvailableStorage   AvailableStorageInfo `json:"storage"`
-	AlternateAddresses AlternateAddresses   `json:"alternateAddresses"`
+	AlternateAddresses *AlternateAddresses  `json:"alternateAddresses,omitempty"`
 }
 
 type AvailableStorageInfo map[AvailableStorageType][]StorageInfo

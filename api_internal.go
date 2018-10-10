@@ -335,7 +335,10 @@ func (c *Couchbase) getAlternateAddressesExternal() (*AlternateAddressesExternal
 	}
 	for _, node := range info.Nodes {
 		if node.ThisNode {
-			return &node.AlternateAddresses.External, nil
+			if node.AlternateAddresses == nil {
+				return nil, nil
+			}
+			return node.AlternateAddresses.External, nil
 		}
 	}
 	return nil, fmt.Errorf("unable to locate alternate addresses for this node")

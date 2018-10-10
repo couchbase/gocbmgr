@@ -86,7 +86,7 @@ func marshal(m interface{}, data *url.Values) error {
 	// access to the individual field values
 	v := reflect.ValueOf(m)
 	if v.Kind() == reflect.Ptr {
-		v = reflect.Indirect(v)
+		v = v.Elem()
 	}
 
 	// From the type we can access the tags of individual fields within
@@ -106,6 +106,14 @@ func marshal(m interface{}, data *url.Values) error {
 		// Parse the tag extracting encoded field name and any options
 		name, options := parseTag(tag)
 		if name == "" {
+			// If it's a pointer type, dereference it, ignore nil values
+			if fv.Kind() == reflect.Ptr {
+				if fv.Interface() == reflect.Zero(fv.Type()).Interface() {
+					continue
+				}
+				fv = fv.Elem()
+			}
+
 			// Handle depth first recursion for nested structs
 			switch fv.Kind() {
 			case reflect.Struct:
@@ -113,7 +121,7 @@ func marshal(m interface{}, data *url.Values) error {
 					return err
 				}
 			default:
-				return fmt.Errorf("unhandled anonymous type for field %s", st.Name)
+				return fmt.Errorf("unhandled type %v for field %s", fv.Kind(), st.Name)
 			}
 			continue
 		}
