@@ -329,17 +329,18 @@ func (c *Couchbase) setUpdatesEnabled(enabled bool) error {
 }
 
 func (c *Couchbase) getAlternateAddressesExternal() (*AlternateAddressesExternal, error) {
-	info, err := c.getPoolsDefault()
-	if err != nil {
+	nodeServices := &NodeServices{}
+	if err := c.n_get("/pools/default/nodeServices", nodeServices, c.defaultHeaders()); err != nil {
 		return nil, err
 	}
-	for _, node := range info.Nodes {
-		if node.ThisNode {
-			if node.AlternateAddresses == nil {
-				return nil, nil
-			}
-			return node.AlternateAddresses.External, nil
+	for _, node := range nodeServices.NodesExt {
+		if !node.ThisNode {
+			continue
 		}
+		if node.AlternateAddresses == nil {
+			return nil, nil
+		}
+		return node.AlternateAddresses.External, nil
 	}
 	return nil, fmt.Errorf("unable to locate alternate addresses for this node")
 }

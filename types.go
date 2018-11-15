@@ -190,6 +190,16 @@ type AlternateAddresses struct {
 	External *AlternateAddressesExternal `json:"external,omitempty"`
 }
 
+type NodeService struct {
+	ThisNode           bool                `json:"thisNode"`
+	AlternateAddresses *AlternateAddresses `json:"alternateAddresses,omitempty"`
+}
+
+// NodeServices is returned by the /pools/default/nodeServices API
+type NodeServices struct {
+	NodesExt []NodeService `json:"nodesExt"`
+}
+
 type NodeInfo struct {
 	ThisNode           bool                 `json:"thisNode"`
 	Uptime             string               `json:"uptime"`
