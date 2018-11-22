@@ -467,3 +467,9 @@ type ServerGroupUpdate struct {
 type ServerGroupsUpdate struct {
 	Groups []ServerGroupUpdate `json:"groups"`
 }
+
+// TextPlainResponse is used to decode text/plain encoded data.  The
+type TextPlainResponse struct {
+	// Data will be initialized by the core response handler.
+	Data []byte
+}

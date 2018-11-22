@@ -24,6 +24,9 @@ type TLSAuth struct {
 	CACert []byte
 	// Optional client authentication
 	ClientAuth *TLSClientAuth
+	// Insecure is just this
+	// DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
+	Insecure bool
 }
 
 // Client certificate authentication prefixes, used to extract the user name
@@ -111,6 +114,11 @@ func (c *Couchbase) SetUUID(uuid string) {
 func (c *Couchbase) SetTLS(tls *TLSAuth) {
 	c.tls = tls
 	c.makeClient()
+}
+
+// GetTLS returns the TLS configuration in use by the client.
+func (c *Couchbase) GetTLS() *TLSAuth {
+	return c.tls
 }
 
 // SetUserAgent sets the User-Agent header to be sent in subsequent HTTP
@@ -438,6 +446,10 @@ func (c *Couchbase) UploadClusterCACert(pem []byte) error {
 
 func (c *Couchbase) ReloadNodeCert() error {
 	return c.reloadNodeCert()
+}
+
+func (c *Couchbase) GetClusterCACert() ([]byte, error) {
+	return c.getClusterCACert()
 }
 
 func (c *Couchbase) SetClientCertAuth(settings *ClientCertAuth) error {

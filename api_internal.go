@@ -298,6 +298,12 @@ func (c *Couchbase) uploadClusterCACert(pem []byte) error {
 	return c.n_post("/controller/uploadClusterCA", pem, headers)
 }
 
+func (c *Couchbase) getClusterCACert() ([]byte, error) {
+	cert := &TextPlainResponse{}
+	err := c.n_get("/pools/default/certificate", cert, c.defaultHeaders())
+	return cert.Data, err
+}
+
 func (c *Couchbase) reloadNodeCert() error {
 	headers := c.defaultHeaders()
 	return c.n_post("/node/controller/reloadCertificate", []byte{}, headers)

@@ -134,7 +134,8 @@ func (c *Couchbase) makeClient() {
 		var tlsClientConfig *tls.Config = nil
 		if c.tls != nil {
 			tlsClientConfig = &tls.Config{
-				RootCAs: x509.NewCertPool(),
+				RootCAs:            x509.NewCertPool(),
+				InsecureSkipVerify: c.tls.Insecure,
 			}
 			// At the very least we need a CA certificate to attain trust in the remote end
 			if ok := tlsClientConfig.RootCAs.AppendCertsFromPEM(c.tls.CACert); !ok {
@@ -286,11 +287,27 @@ func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}
 	if response.StatusCode == http.StatusOK || response.StatusCode == http.StatusAccepted || response.StatusCode == http.StatusCreated {
 		defer response.Body.Close()
 		if result != nil {
-			decoder := json.NewDecoder(response.Body)
-			decoder.UseNumber()
-			err := decoder.Decode(result)
-			if err != nil {
-				return ClientError{"unmarshal json response", err}
+			switch contentType := response.Header.Get("Content-Type"); contentType {
+			case "application/json":
+				decoder := json.NewDecoder(response.Body)
+				decoder.UseNumber()
+				err := decoder.Decode(result)
+				if err != nil {
+					return ClientError{"unmarshal json response", err}
+				}
+			case "text/plain":
+				res, ok := result.(*TextPlainResponse)
+				if !ok {
+					return ClientError{"unmarshal text response", fmt.Errorf("invalid result type specified for content of type text/plain")}
+				}
+				data, err := ioutil.ReadAll(response.Body)
+				if err != nil {
+					return ClientError{"unmarshal text response", err}
+				}
+				res.Data = make([]byte, len(data))
+				copy(res.Data, data)
+			default:
+				return ClientError{"unmarshal response", fmt.Errorf("unhandled content type %s", contentType)}
 			}
 		}
 
