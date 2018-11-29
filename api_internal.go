@@ -2,7 +2,6 @@ package cbmgr
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -348,7 +347,10 @@ func (c *Couchbase) getAlternateAddressesExternal() (*AlternateAddressesExternal
 		}
 		return node.AlternateAddresses.External, nil
 	}
-	return nil, fmt.Errorf("unable to locate alternate addresses for this node")
+	// The absence of this node is probably due to it not being balanced in yet.
+	// /pools/default/nodeServices apparently only shows nodes when the rebalance
+	// starts.  Don't raise an error.
+	return nil, nil
 }
 
 func (c *Couchbase) setAlternateAddressesExternal(addresses *AlternateAddressesExternal) error {
