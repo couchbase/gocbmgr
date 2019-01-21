@@ -253,6 +253,14 @@ const (
 	IoPriorityThreadCountHigh IoPriorityThreadCount = 8
 )
 
+type CompressionMode string
+
+const (
+	CompressionModeNone    CompressionMode = "none"
+	CompressionModePassive CompressionMode = "passive"
+	CompressionModeActive  CompressionMode = "active"
+)
+
 type Bucket struct {
 	BucketName         string         `json:"name"`
 	BucketType         string         `json:"type"`
@@ -264,6 +272,7 @@ type Bucket struct {
 	EnableFlush        *bool          `json:"enableFlush"`
 	EnableIndexReplica *bool          `json:"enableIndexReplica"`
 	BucketPassword     *string        `json:"password"`
+	CompressionMode    string         `json:"compressionMode"`
 }
 
 type BucketStatus struct {
