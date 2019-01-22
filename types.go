@@ -256,23 +256,23 @@ const (
 type CompressionMode string
 
 const (
-	CompressionModeNone    CompressionMode = "none"
+	CompressionModeOff     CompressionMode = "off"
 	CompressionModePassive CompressionMode = "passive"
 	CompressionModeActive  CompressionMode = "active"
 )
 
 type Bucket struct {
-	BucketName         string         `json:"name"`
-	BucketType         string         `json:"type"`
-	BucketMemoryQuota  int            `json:"memoryQuota"`
-	BucketReplicas     int            `json:"replicas"`
-	IoPriority         IoPriorityType `json:"ioPriority"`
-	EvictionPolicy     *string        `json:"evictionPolicy"`
-	ConflictResolution *string        `json:"conflictResolution"`
-	EnableFlush        *bool          `json:"enableFlush"`
-	EnableIndexReplica *bool          `json:"enableIndexReplica"`
-	BucketPassword     *string        `json:"password"`
-	CompressionMode    string         `json:"compressionMode"`
+	BucketName         string          `json:"name"`
+	BucketType         string          `json:"type"`
+	BucketMemoryQuota  int             `json:"memoryQuota"`
+	BucketReplicas     int             `json:"replicas"`
+	IoPriority         IoPriorityType  `json:"ioPriority"`
+	EvictionPolicy     *string         `json:"evictionPolicy"`
+	ConflictResolution *string         `json:"conflictResolution"`
+	EnableFlush        *bool           `json:"enableFlush"`
+	EnableIndexReplica *bool           `json:"enableIndexReplica"`
+	BucketPassword     *string         `json:"password"`
+	CompressionMode    CompressionMode `json:"compressionMode"`
 }
 
 type BucketStatus struct {
@@ -289,6 +289,7 @@ type BucketStatus struct {
 	Quota                  map[string]int        `json:"quota"`
 	Stats                  map[string]string     `json:"stats"`
 	VBServerMap            VBucketServerMap      `json:"vBucketServerMap"`
+	CompressionMode        CompressionMode       `json:"compressionMode"`
 }
 
 type VBucketServerMap struct {
@@ -372,6 +373,7 @@ func (b *Bucket) unmarshalFromStatus(data []byte) error {
 	b.ConflictResolution = &status.ConflictResolution
 	b.EnableIndexReplica = &status.EnableIndexReplica
 	b.BucketReplicas = status.ReplicaNumber
+	b.CompressionMode = status.CompressionMode
 
 	if _, ok := status.Controllers["flush"]; ok {
 		b.EnableFlush = &ok
@@ -395,6 +397,7 @@ func (b *Bucket) FormEncode() []byte {
 	data.Set("ramQuotaMB", strconv.Itoa(b.BucketMemoryQuota))
 	data.Set("replicaNumber", strconv.Itoa(b.BucketReplicas))
 	data.Set("authType", "sasl")
+	data.Set("compressionMode", string(b.CompressionMode))
 	if b.EvictionPolicy != nil {
 		data.Set("evictionPolicy", *b.EvictionPolicy)
 	}
