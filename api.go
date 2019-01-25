@@ -3,9 +3,7 @@ package cbmgr
 import (
 	"fmt"
 	"net/http"
-	"sync/atomic"
 	"time"
-	"unsafe"
 
 	"github.com/sirupsen/logrus"
 )
@@ -127,79 +125,131 @@ func (c *Couchbase) SetUserAgent(userAgent *UserAgent) {
 	c.userAgent = userAgent
 }
 
-type RebalanceProgress struct {
-	client    *Couchbase
-	cancelled *atomicBool
-	logger    *logrus.Entry
-	interval  time.Duration
+// RebalanceProgressEntry is the type communicated to clients periodically
+// over a channel.
+type RebalanceStatusEntry struct {
+	// Status is the status of a rebalance.
+	Status RebalanceStatus
+	// Progress is how far the rebalance has progressed, only valid when
+	// the status is RebalanceStatusRunning.
+	Progress float64
 }
 
-func (r *RebalanceProgress) Wait() error {
-	isRunning := true
-	for isRunning && !r.cancelled.Load() {
-		task, err := r.GetRebalanceTaskStatus()
-		if err != nil {
-			return err
-		}
+// RebalanceProgress is a type used to monitor rebalance status.
+type RebalanceProgress interface {
+	// Status is a channel that is periodically updated with the rebalance
+	// status and progress.  This channel is closed once the rebalance task
+	// is no longer running and the go routine terminated.
+	Status() <-chan *RebalanceStatusEntry
+	// Error is a channel that returns a single error indicating something
+	// went wrong and the go routine has been terminated.
+	Error() <-chan error
+	// Cancel allows the client to stop the go routine before a rebalance has
+	// completed.
+	Close()
+}
 
-		switch task.Status {
-		case RebalanceStatusUnknown:
-			logger := (*logrus.Entry)(atomic.LoadPointer((*unsafe.Pointer)((unsafe.Pointer)(&r.logger))))
-			if logger != nil {
-				logger.Infof("Rebalance progress: unknown")
-			}
-		case RebalanceStatusNotRunning:
-			isRunning = false
-		case RebalanceStatusRunning:
-			logger := (*logrus.Entry)(atomic.LoadPointer((*unsafe.Pointer)((unsafe.Pointer)(&r.logger))))
-			if logger != nil {
-				logger.Infof("Rebalance progress: %f", task.Progress)
-			}
-		}
-		time.Sleep(r.interval)
+// rebalanceProgressImpl implements the RebalanceProgress interface.
+type rebalanceProgressImpl struct {
+	// statusChan is the main channel for communicating status to the client.
+	statusChan chan *RebalanceStatusEntry
+	// errorChan is a channel to communicate errors to the client.
+	errorChan chan error
+	// stopChan is the channel that is closed by the client to terminate the go routine.
+	stopChan chan interface{}
+}
+
+// NewRebalanceProgress creates a new RebalanceProgress object and starts a go routine to
+// periodically poll for updates.
+func (c *Couchbase) NewRebalanceProgress() RebalanceProgress {
+	progress := &rebalanceProgressImpl{
+		statusChan: make(chan *RebalanceStatusEntry),
+		errorChan:  make(chan error),
+		stopChan:   make(chan interface{}),
 	}
 
-	return nil
+	go func() {
+	RoutineRunloop:
+		for {
+			task, err := c.getRebalanceTask()
+			if err != nil {
+				progress.errorChan <- err
+				break RoutineRunloop
+			}
+
+			status := getRebalanceStatus(task)
+
+			// If the task is no longer running then terminate the routine.
+			if status == RebalanceStatusNotRunning {
+				close(progress.statusChan)
+				break RoutineRunloop
+			}
+
+			// Otherwise return the status to the client
+			progress.statusChan <- &RebalanceStatusEntry{
+				Status:   status,
+				Progress: task.Progress,
+			}
+
+			// Wait for a period of time or for the client to close the
+			// progress.  Do this in the loop tail to maintain compatability
+			// with the old code.
+			select {
+			case <-time.After(4 * time.Second):
+			case <-progress.stopChan:
+				close(progress.statusChan)
+				break RoutineRunloop
+			}
+		}
+	}()
+
+	return progress
 }
 
-// Get status of rebalance from list of cluster tasks
-func (r *RebalanceProgress) GetRebalanceTaskStatus() (*RebalanceTaskStatus, error) {
-	tasks, err := r.client.getTasks()
+// Status returns the RebalanceProgress status channel.
+func (r *rebalanceProgressImpl) Status() <-chan *RebalanceStatusEntry {
+	return r.statusChan
+}
+
+// Error returns the RebalanceProgress error channel.
+func (r *rebalanceProgressImpl) Error() <-chan error {
+	return r.errorChan
+}
+
+// Close terminates the RebalanceProgress routine.
+func (r *rebalanceProgressImpl) Close() {
+	close(r.stopChan)
+}
+
+// getRebalanceStatus transforms a task status into our simplified rebalance status.
+func getRebalanceStatus(task *Task) RebalanceStatus {
+	// We treat stale or timed out tasks as unknown, no status
+	// is treated as not running.
+	status := RebalanceStatus(task.Status)
+	switch {
+	case task.Stale || task.Timeout:
+		status = RebalanceStatusUnknown
+	case status == RebalanceStatusNone:
+		status = RebalanceStatusNotRunning
+	}
+	return status
+}
+
+// getRebalanceTask polls the Couchbase API for tasks and returns the one associated
+// with a rebalance.
+func (c *Couchbase) getRebalanceTask() (*Task, error) {
+	tasks, err := c.getTasks()
 	if err != nil {
 		return nil, err
 	}
 
 	for _, task := range tasks {
 		if task.Type == "rebalance" {
-			if task.Stale || task.Timeout {
-				return &RebalanceTaskStatus{Status: RebalanceStatusUnknown}, nil
-			}
-			switch RebalanceStatus(task.Status) {
-			case RebalanceStatusNotRunning:
-				return &RebalanceTaskStatus{Status: RebalanceStatusNotRunning}, nil
-			case RebalanceStatusNone:
-				// interpreting rebalance with status 'none' as not running
-				return &RebalanceTaskStatus{Status: RebalanceStatusNotRunning}, nil
-			case RebalanceStatusRunning:
-				return &RebalanceTaskStatus{
-					Status:   RebalanceStatusRunning,
-					Progress: task.Progress,
-				}, nil
-			default:
-				return nil, fmt.Errorf("Unexpected rebalance status: %s", task.Status)
-			}
+			return task, nil
 		}
 	}
 
-	return nil, fmt.Errorf("Failed to find task for rebalance status")
-}
-
-func (r *RebalanceProgress) SetLogger(logger *logrus.Entry) {
-	atomic.SwapPointer((*unsafe.Pointer)((unsafe.Pointer)(&r.logger)), unsafe.Pointer(logger))
-}
-
-func (r *RebalanceProgress) Cancel() {
-	r.cancelled.Store(true)
+	return nil, fmt.Errorf("no rebalance task detected")
 }
 
 func (c *Couchbase) AddNode(hostname, username, password string, services ServiceList) error {
@@ -296,10 +346,10 @@ func (c *Couchbase) NodeInitialize(hostname, dataPath, indexPath string, analyti
 	return nil
 }
 
-func (c *Couchbase) Rebalance(nodesToRemove []string) (*RebalanceProgress, error) {
+func (c *Couchbase) Rebalance(nodesToRemove []string) error {
 	cluster, err := c.getPoolsDefault()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	all := []string{}
@@ -315,20 +365,19 @@ func (c *Couchbase) Rebalance(nodesToRemove []string) (*RebalanceProgress, error
 
 	err = c.rebalance(all, eject)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &RebalanceProgress{c, newAtomicBool(false), nil, 4 * time.Second}, nil
+	return nil
 }
 
 // Compare status of rebalance with an expected status
 func (c *Couchbase) CompareRebalanceStatus(expectedStatus RebalanceStatus) (bool, error) {
-	progress := &RebalanceProgress{c, nil, nil, 4 * time.Second}
-	task, err := progress.GetRebalanceTaskStatus()
+	task, err := c.getRebalanceTask()
 	if err != nil {
 		return false, err
 	}
-	return task.Status == expectedStatus, nil
+	return getRebalanceStatus(task) == expectedStatus, nil
 }
 
 func (c *Couchbase) StopRebalance() error {

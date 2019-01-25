@@ -17,11 +17,6 @@ const (
 	RebalanceStatusNone       RebalanceStatus = "none"
 )
 
-type RebalanceTaskStatus struct {
-	Status   RebalanceStatus
-	Progress float64
-}
-
 type IndexStorageMode string
 
 const (
