@@ -270,6 +270,16 @@ type Bucket struct {
 	CompressionMode    CompressionMode `json:"compressionMode"`
 }
 
+type BucketBasicStats struct {
+	DataUsed         int     `json:"dataUsed"`
+	DiskFetches      int     `json:"diskFetches"`
+	DiskUsed         int     `json:"diskUsed"`
+	ItemCount        int     `json:"itemCount"`
+	MemUsed          int     `json:"memUsed"`
+	OpsPerSec        float64 `json:"opsPerSec"`
+	QuotaPercentUsed float64 `json:"quotaPercentUsed"`
+}
+
 type BucketStatus struct {
 	Nodes                  []NodeInfo            `json:"nodes"`
 	BucketName             string                `json:"name"`
@@ -285,6 +295,7 @@ type BucketStatus struct {
 	Stats                  map[string]string     `json:"stats"`
 	VBServerMap            VBucketServerMap      `json:"vBucketServerMap"`
 	CompressionMode        CompressionMode       `json:"compressionMode"`
+	BasicStats             BucketBasicStats      `json:"basicStats"`
 }
 
 type VBucketServerMap struct {
