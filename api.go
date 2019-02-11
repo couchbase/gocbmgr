@@ -1,6 +1,7 @@
 package cbmgr
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -139,24 +140,26 @@ type RebalanceStatusEntry struct {
 type RebalanceProgress interface {
 	// Status is a channel that is periodically updated with the rebalance
 	// status and progress.  This channel is closed once the rebalance task
-	// is no longer running and the go routine terminated.
+	// is no longer running or an error was detected.
 	Status() <-chan *RebalanceStatusEntry
-	// Error is a channel that returns a single error indicating something
-	// went wrong and the go routine has been terminated.
-	Error() <-chan error
+	// Error is used to check the error status when the Status channel has
+	// been closed.
+	Error() error
 	// Cancel allows the client to stop the go routine before a rebalance has
 	// completed.
-	Close()
+	Cancel()
 }
 
 // rebalanceProgressImpl implements the RebalanceProgress interface.
 type rebalanceProgressImpl struct {
 	// statusChan is the main channel for communicating status to the client.
 	statusChan chan *RebalanceStatusEntry
-	// errorChan is a channel to communicate errors to the client.
-	errorChan chan error
-	// stopChan is the channel that is closed by the client to terminate the go routine.
-	stopChan chan interface{}
+	// err is used to return any error encountered
+	err error
+	// context is a context used to cancel the rebalance progress
+	context context.Context
+	// cancel is used to cancel the rebalance progress
+	cancel context.CancelFunc
 }
 
 // NewRebalanceProgress creates a new RebalanceProgress object and starts a go routine to
@@ -164,16 +167,16 @@ type rebalanceProgressImpl struct {
 func (c *Couchbase) NewRebalanceProgress() RebalanceProgress {
 	progress := &rebalanceProgressImpl{
 		statusChan: make(chan *RebalanceStatusEntry),
-		errorChan:  make(chan error),
-		stopChan:   make(chan interface{}),
 	}
+	progress.context, progress.cancel = context.WithCancel(context.Background())
 
 	go func() {
 	RoutineRunloop:
 		for {
 			task, err := c.getRebalanceTask()
 			if err != nil {
-				progress.errorChan <- err
+				progress.err = err
+				close(progress.statusChan)
 				break RoutineRunloop
 			}
 
@@ -196,8 +199,7 @@ func (c *Couchbase) NewRebalanceProgress() RebalanceProgress {
 			// with the old code.
 			select {
 			case <-time.After(4 * time.Second):
-			case <-progress.stopChan:
-				close(progress.statusChan)
+			case <-progress.context.Done():
 				break RoutineRunloop
 			}
 		}
@@ -212,13 +214,13 @@ func (r *rebalanceProgressImpl) Status() <-chan *RebalanceStatusEntry {
 }
 
 // Error returns the RebalanceProgress error channel.
-func (r *rebalanceProgressImpl) Error() <-chan error {
-	return r.errorChan
+func (r *rebalanceProgressImpl) Error() error {
+	return r.err
 }
 
-// Close terminates the RebalanceProgress routine.
-func (r *rebalanceProgressImpl) Close() {
-	close(r.stopChan)
+// Cancel terminates the RebalanceProgress routine.
+func (r *rebalanceProgressImpl) Cancel() {
+	r.cancel()
 }
 
 // getRebalanceStatus transforms a task status into our simplified rebalance status.
