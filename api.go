@@ -336,6 +336,14 @@ func (c *Couchbase) ClusterUUID() (string, error) {
 	}
 }
 
+func (c *Couchbase) IsEnterprise() (bool, error) {
+	info, err := c.getPools()
+	if err != nil {
+		return false, err
+	}
+	return info.Enterprise, nil
+}
+
 func (c *Couchbase) NodeInitialize(hostname, dataPath, indexPath string, analyticsPaths []string) error {
 	if err := c.setHostname(hostname); err != nil {
 		return err
