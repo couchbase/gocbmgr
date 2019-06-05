@@ -216,7 +216,7 @@ func (c *Couchbase) deleteBucket(name string) error {
 func (c *Couchbase) editBucket(bucket *Bucket) error {
 	// bucket params cannot include conflict resolution field
 	// during edit.  TODO: fix for couchbase rest API
-	bucket.ConflictResolution = nil
+	bucket.ConflictResolution = ""
 
 	params := bucket.FormEncode()
 	headers := c.defaultHeaders()

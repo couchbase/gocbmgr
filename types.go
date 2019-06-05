@@ -262,11 +262,11 @@ type Bucket struct {
 	BucketMemoryQuota  int             `json:"memoryQuota"`
 	BucketReplicas     int             `json:"replicas"`
 	IoPriority         IoPriorityType  `json:"ioPriority"`
-	EvictionPolicy     *string         `json:"evictionPolicy"`
-	ConflictResolution *string         `json:"conflictResolution"`
-	EnableFlush        *bool           `json:"enableFlush"`
-	EnableIndexReplica *bool           `json:"enableIndexReplica"`
-	BucketPassword     *string         `json:"password"`
+	EvictionPolicy     string          `json:"evictionPolicy"`
+	ConflictResolution string          `json:"conflictResolution"`
+	EnableFlush        bool            `json:"enableFlush"`
+	EnableIndexReplica bool            `json:"enableIndexReplica"`
+	BucketPassword     string          `json:"password"`
 	CompressionMode    CompressionMode `json:"compressionMode"`
 }
 
@@ -373,26 +373,36 @@ func (b *Bucket) unmarshalFromStatus(data []byte) error {
 		return err
 	}
 
+	// Generic things across all bucket types
 	b.BucketName = status.BucketName
 	b.BucketType = status.BucketType
-	b.EvictionPolicy = &status.EvictionPolicy
-	b.ConflictResolution = &status.ConflictResolution
-	b.EnableIndexReplica = &status.EnableIndexReplica
-	b.BucketReplicas = status.ReplicaNumber
-	b.CompressionMode = status.CompressionMode
-
-	if _, ok := status.Controllers["flush"]; ok {
-		b.EnableFlush = &ok
-	} else {
-		disabled := false
-		b.EnableFlush = &disabled
+	if b.BucketType == "membase" {
+		b.BucketType = "couchbase"
 	}
-
 	if ramQuotaBytes, ok := status.Quota["rawRAM"]; ok {
 		b.BucketMemoryQuota = ramQuotaBytes >> 20
 	}
+	b.EnableFlush = false
+	if _, ok := status.Controllers["flush"]; ok {
+		b.EnableFlush = ok
+	}
+	if b.BucketType == "memcached" {
+		return nil
+	}
 
+	// Generic things across couchbase/ephemeral
+	b.EvictionPolicy = status.EvictionPolicy
+	b.ConflictResolution = status.ConflictResolution
+	b.BucketReplicas = status.ReplicaNumber
+	b.CompressionMode = status.CompressionMode
 	b.IoPriority = status.GetIoPriority()
+	if b.BucketType == "ephemeral" {
+		return nil
+	}
+
+	// Couchbase only things
+	b.EnableIndexReplica = status.EnableIndexReplica
+
 	return nil
 }
 
@@ -404,8 +414,9 @@ func (b *Bucket) FormEncode() []byte {
 	data.Set("replicaNumber", strconv.Itoa(b.BucketReplicas))
 	data.Set("authType", "sasl")
 	data.Set("compressionMode", string(b.CompressionMode))
-	if b.EvictionPolicy != nil {
-		data.Set("evictionPolicy", *b.EvictionPolicy)
+	data.Set("flushEnabled", BoolToStr(b.EnableFlush))
+	if b.EvictionPolicy != "" {
+		data.Set("evictionPolicy", b.EvictionPolicy)
 	}
 	if b.IoPriority == IoPriorityTypeLow {
 		data.Set("threadsNumber", strconv.Itoa(int(IoPriorityThreadCountLow)))
@@ -413,14 +424,11 @@ func (b *Bucket) FormEncode() []byte {
 	if b.IoPriority == IoPriorityTypeHigh {
 		data.Set("threadsNumber", strconv.Itoa(int(IoPriorityThreadCountHigh)))
 	}
-	if b.ConflictResolution != nil {
-		data.Set("conflictResolutionType", *b.ConflictResolution)
+	if b.ConflictResolution != "" {
+		data.Set("conflictResolutionType", b.ConflictResolution)
 	}
-	if b.EnableFlush != nil {
-		data.Set("flushEnabled", BoolToStr(*b.EnableFlush))
-	}
-	if b.EnableIndexReplica != nil {
-		data.Set("replicaIndex", BoolToStr(*b.EnableIndexReplica))
+	if b.BucketType == "couchbase" {
+		data.Set("replicaIndex", BoolToStr(b.EnableIndexReplica))
 	}
 
 	return []byte(data.Encode())
