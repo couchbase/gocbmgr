@@ -272,7 +272,7 @@ type Bucket struct {
 
 type BucketBasicStats struct {
 	DataUsed         int     `json:"dataUsed"`
-	DiskFetches      int     `json:"diskFetches"`
+	DiskFetches      float64 `json:"diskFetches"`
 	DiskUsed         int     `json:"diskUsed"`
 	ItemCount        int     `json:"itemCount"`
 	MemUsed          int     `json:"memUsed"`
