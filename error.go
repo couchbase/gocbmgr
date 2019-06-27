@@ -6,14 +6,14 @@ import (
 )
 
 var (
-	ErrorNodeUninitialized error = fmt.Errorf("Node uninitialized")
+	ErrorNodeUninitialized error = fmt.Errorf("node uninitialized")
 )
 
 // Errors resulting from sending BadRequests to rebalance API
 const (
-	DeltaRecoveryNotPossible string = "deltaRecoveryNotPossible"
-	EmptyKnownNodes                 = "empty_known_nodes"
-	Mismatch                        = "mismatch"
+	DeltaRecoveryNotPossible = "deltaRecoveryNotPossible"
+	EmptyKnownNodes          = "empty_known_nodes"
+	Mismatch                 = "mismatch"
 )
 
 // Rebalance API will set an int flag to indicate
@@ -107,7 +107,7 @@ func (e BulkError) Error() string {
 // Check for a specific error key within an arbitrary error type
 func HasErrorOccured(err error, key string) bool {
 
-	switch err.(type) {
+	switch t := err.(type) {
 
 	case ServerError:
 		// Check as single SeverError
@@ -115,7 +115,7 @@ func HasErrorOccured(err error, key string) bool {
 
 	case BulkError:
 		// Check as BulkErrors
-		for _, e := range err.(BulkError).errs {
+		for _, e := range t.errs {
 			if HasServerError(e, key) {
 				return true
 			}
@@ -141,7 +141,7 @@ type ClientError struct {
 }
 
 func (e ClientError) Error() string {
-	return fmt.Sprintf("Client error `%s`: %s", e.reason, e.err.Error())
+	return fmt.Sprintf("client error `%s`: %s", e.reason, e.err.Error())
 }
 
 type NetworkError struct {
@@ -151,7 +151,7 @@ type NetworkError struct {
 }
 
 func (e NetworkError) Error() string {
-	return fmt.Sprintf("Network Error (%s%s): %s", e.endpoint, e.path, e.err.Error())
+	return fmt.Sprintf("network Error (%s%s): %s", e.endpoint, e.path, e.err.Error())
 }
 
 type ServerError struct {
@@ -167,7 +167,7 @@ func (e ServerError) Error() string {
 		all = append(all, k+" - "+v)
 	}
 
-	return fmt.Sprintf("Server Error %d (%s%s): %s", e.code, e.endpoint, e.path, all)
+	return fmt.Sprintf("server Error %d (%s%s): %s", e.code, e.endpoint, e.path, all)
 }
 
 // IsServerError returns true if all errors are the same code

@@ -195,7 +195,7 @@ func (c *Couchbase) NewRebalanceProgress() RebalanceProgress {
 			}
 
 			// Wait for a period of time or for the client to close the
-			// progress.  Do this in the loop tail to maintain compatability
+			// progress.  Do this in the loop tail to maintain compatibility
 			// with the old code.
 			select {
 			case <-time.After(4 * time.Second):
@@ -270,7 +270,7 @@ func (c *Couchbase) CancelAddNode(hostname string) error {
 		}
 	}
 
-	return fmt.Errorf("Hostname %s is not part of the cluster", hostname)
+	return fmt.Errorf("hostname %s is not part of the cluster", hostname)
 }
 
 func (c *Couchbase) CancelAddBackNode(hostname string) error {
@@ -285,7 +285,7 @@ func (c *Couchbase) CancelAddBackNode(hostname string) error {
 		}
 	}
 
-	return fmt.Errorf("Hostname %s is not part of the cluster", hostname)
+	return fmt.Errorf("hostname %s is not part of the cluster", hostname)
 }
 
 func (c *Couchbase) ClusterInfo() (*ClusterInfo, error) {
@@ -467,7 +467,7 @@ func (c *Couchbase) GetBucket(bucketName string) (*Bucket, error) {
 			return bucket, nil
 		}
 	}
-	return nil, fmt.Errorf("No such bucket: %s", bucketName)
+	return nil, fmt.Errorf("no such bucket: %s", bucketName)
 }
 
 func (c *Couchbase) InsertDoc(bucketObj *Bucket, docKey string, data []byte) error {
@@ -566,7 +566,7 @@ func (c *Couchbase) SetRecoveryType(hostname string, recoveryType RecoveryType) 
 			return c.setRecoveryType(node.OTPNode, recoveryType)
 		}
 	}
-	return fmt.Errorf("Hostname %s is not part of the cluster", hostname)
+	return fmt.Errorf("hostname %s is not part of the cluster", hostname)
 }
 
 func (c *Couchbase) SetLogLevel(level string) error {
@@ -576,4 +576,12 @@ func (c *Couchbase) SetLogLevel(level string) error {
 	}
 	logrus.SetLevel(lvl)
 	return nil
+}
+
+func (c *Couchbase) GetAutoCompactionSettings() (*AutoCompactionSettings, error) {
+	return c.getAutoCompactionSettings()
+}
+
+func (c *Couchbase) SetAutoCompactionSettings(r *AutoCompactionSettings) error {
+	return c.setAutoCompactionSettings(r)
 }

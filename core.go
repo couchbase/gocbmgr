@@ -128,7 +128,7 @@ func (c *Couchbase) makeClient() {
 	// is specific to the username/password/uuid of the cluster.  It is called
 	// when a HTTPS client first dials a host and verifies the UUID is as expected.
 	dialTLS := func(network, addr string) (net.Conn, error) {
-		// If the TLS configuration is explicilty set use that, otherwise
+		// If the TLS configuration is explicitly set use that, otherwise
 		// use a basic configuration (which won't ever work unless your cluster
 		// is signed by a CA defined in the ca-certificates package)
 		var tlsClientConfig *tls.Config = nil
@@ -373,6 +373,7 @@ func (c *Couchbase) defaultHeaders() http.Header {
 		}
 	}
 	headers.Set(HeaderUserAgent, userAgent)
+	headers.Set("Accept-Encoding", "application/json, text/plain, */*")
 
 	return headers
 }

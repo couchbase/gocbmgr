@@ -75,7 +75,7 @@ func ServiceListFromStringArray(arr []string) (ServiceList, error) {
 		} else if svc == "cbas" || svc == "analytics" {
 			list = append(list, AnalyticsService)
 		} else {
-			return list, fmt.Errorf("Invalid service name: %s", svc)
+			return list, fmt.Errorf("invalid service name: %s", svc)
 		}
 	}
 
@@ -94,7 +94,7 @@ type RecoveryType string
 
 const (
 	RecoveryTypeDelta RecoveryType = "delta"
-	RecoveryTypeFull               = "full"
+	RecoveryTypeFull  RecoveryType = "full"
 )
 
 type ClusterInfo struct {
@@ -482,7 +482,7 @@ type ServerGroupUpdateOTPNode struct {
 // ServerGroupUpdate defines a server group and its nodes
 type ServerGroupUpdate struct {
 	// Name is the group name and must match the existing one
-	Name string `json:"name",omitempty`
+	Name string `json:"name,omitempty"`
 	// URI is the same as returned in ServerGroup
 	URI string `json:"uri"`
 	// Nodes is a list of OTP nodes
@@ -498,4 +498,96 @@ type ServerGroupsUpdate struct {
 type TextPlainResponse struct {
 	// Data will be initialized by the core response handler.
 	Data []byte
+}
+
+// AutoCompactionDatabaseFragmentationThreshold indicates the percentage or size before a bucket
+// compaction is triggered.
+type AutoCompactionDatabaseFragmentationThreshold struct {
+	Percentage int   `json:"percentage" url:"databaseFragmentationThreshold[percentage],omitempty"`
+	Size       int64 `json:"size" url:"databaseFragmentationThreshold[size],omitempty"`
+}
+
+// UnmarshalJSON handles some *&$^ing moron's decision to have size as either an
+// integer or "undefined".  Way to go!
+func (r *AutoCompactionDatabaseFragmentationThreshold) UnmarshalJSON(b []byte) error {
+	type t AutoCompactionDatabaseFragmentationThreshold
+	var s struct {
+		t
+		Percentage interface{} `json:"percentage"`
+		Size       interface{} `json:"size"`
+	}
+
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	*r = AutoCompactionDatabaseFragmentationThreshold(s.t)
+	if i, ok := s.Size.(float64); ok {
+		r.Size = int64(i)
+	}
+	if i, ok := s.Percentage.(float64); ok {
+		r.Percentage = int(i)
+	}
+
+	return nil
+}
+
+// AutoCompactionViewFragmentationThreshold indicates the percentage or size before a view
+// compaction is triggered.
+type AutoCompactionViewFragmentationThreshold struct {
+	Percentage int   `json:"percentage" url:"viewFragmentationThreshold[percentage],omitempty"`
+	Size       int64 `json:"size" url:"viewFragmentationThreshold[size],omitempty"`
+}
+
+// UnmarshalJSON handles some *&$^ing moron's decision to have size as either an
+// integer or "undefined".  Way to go!
+func (r *AutoCompactionViewFragmentationThreshold) UnmarshalJSON(b []byte) error {
+	type t AutoCompactionViewFragmentationThreshold
+	var s struct {
+		t
+		Percentage interface{} `json:"percentage"`
+		Size       interface{} `json:"size"`
+	}
+
+	if err := json.Unmarshal(b, &s); err != nil {
+		return err
+	}
+
+	*r = AutoCompactionViewFragmentationThreshold(s.t)
+	if i, ok := s.Size.(float64); ok {
+		r.Size = int64(i)
+	}
+	if i, ok := s.Percentage.(float64); ok {
+		r.Percentage = int(i)
+	}
+
+	return nil
+}
+
+type AutoCompactionInterval struct {
+	FromHour     int  `json:"fromHour" url:"indexCircularCompaction[interval][fromHour]"`
+	FromMinute   int  `json:"fromMinute" url:"indexCircularCompaction[interval][fromMinute]"`
+	ToHour       int  `json:"toHour" url:"indexCircularCompaction[interval][toHour]"`
+	ToMinute     int  `json:"toMinute" url:"indexCircularCompaction[interval][toMinute]"`
+	AbortOutside bool `json:"abortOutside" url:"indexCircularCompaction[interval][abortOutside]"`
+}
+
+type AutoCompactionIndexCircularCompaction struct {
+	DaysOfWeek string                 `json:"daysOfWeek" url:"indexCircularCompaction[daysOfWeek]"`
+	Interval   AutoCompactionInterval `json:"interval" url:""`
+}
+
+type AutoCompactionAutoCompactionSettings struct {
+	DatabaseFragmentationThreshold AutoCompactionDatabaseFragmentationThreshold `json:"databaseFragmentationThreshold" url:""`
+	ViewFragmentationThreshold     AutoCompactionViewFragmentationThreshold     `json:"viewFragmentationThreshold" url:""`
+	ParallelDBAndViewCompaction    bool                                         `json:"parallelDBAndViewCompaction" url:"parallelDBAndViewCompaction"`
+	IndexCompactionMode            string                                       `json:"indexCompactionMode" url:"indexCompactionMode"`
+	IndexCircularCompaction        AutoCompactionIndexCircularCompaction        `json:"indexCircularCompaction" url:""`
+}
+
+// AutoCompactionSettings is the cluster wide auto-compaction settings for a
+// Couchbase cluster.
+type AutoCompactionSettings struct {
+	AutoCompactionSettings AutoCompactionAutoCompactionSettings `json:"autoCompactionSettings" url:""`
+	PurgeInterval          float64                              `json:"purgeInterval" url:"purgeInterval"`
 }

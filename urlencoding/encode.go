@@ -13,12 +13,14 @@ func isEmptyValue(v reflect.Value) bool {
 	switch v.Kind() {
 	case reflect.String:
 		return v.String() == ""
-	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return v.Int() == 0
-	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0.0
 	case reflect.Bool:
-		return v.Bool() == false
+		return !v.Bool()
 	}
 	return false
 }
@@ -28,10 +30,12 @@ func encode(v reflect.Value) (string, error) {
 	switch v.Kind() {
 	case reflect.String:
 		return v.String(), nil
-	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return strconv.FormatInt(v.Int(), 10), nil
-	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return strconv.FormatUint(v.Uint(), 10), nil
+	case reflect.Float32, reflect.Float64:
+		return strconv.FormatFloat(v.Float(), 'f', -1, 64), nil
 	case reflect.Bool:
 		return strconv.FormatBool(v.Bool()), nil
 	}

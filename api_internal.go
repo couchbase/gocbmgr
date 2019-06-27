@@ -114,14 +114,6 @@ func (c *Couchbase) setPoolsDefault(defaults *PoolsDefaults) error {
 	return c.n_post("/pools/default", data, headers)
 }
 
-func (c *Couchbase) setMemoryQuota(id string, quota int) error {
-	data := url.Values{}
-	data.Set(id, strconv.Itoa(quota))
-	headers := c.defaultHeaders()
-	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
-	return c.n_post("/pools/default", []byte(data.Encode()), headers)
-}
-
 func (c *Couchbase) setStoragePaths(dataPath, indexPath string, analyticsPaths []string) error {
 	data := url.Values{}
 	data.Set("path", dataPath)
@@ -172,8 +164,6 @@ func (c *Couchbase) setIndexSettings(mode IndexStorageMode, threads, memSnapInte
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
 
 	return c.n_post("/settings/indexes", []byte(data.Encode()), headers)
-
-	return nil
 }
 
 func (c *Couchbase) setServices(services ServiceList) error {
@@ -426,4 +416,24 @@ func (c *Couchbase) setRecoveryType(otpNode string, recoveryType RecoveryType) e
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
 	return c.n_post("/controller/setRecoveryType", []byte(data.Encode()), headers)
+}
+
+func (c *Couchbase) getAutoCompactionSettings() (*AutoCompactionSettings, error) {
+	r := &AutoCompactionSettings{}
+	if err := c.n_get("/settings/autoCompaction", r, c.defaultHeaders()); err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+func (c *Couchbase) setAutoCompactionSettings(r *AutoCompactionSettings) error {
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	data, err := urlencoding.Marshal(r)
+	if err != nil {
+		return err
+	}
+
+	return c.n_post("/controller/setAutoCompaction", data, headers)
 }
