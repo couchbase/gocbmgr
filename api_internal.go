@@ -595,3 +595,54 @@ func (c *Couchbase) deleteReplication(r *Replication) error {
 	// WHAT IS THIS MADNESS?!??!?!?!?!??!
 	return c.n_delete("/controller/cancelXDCR/"+url.PathEscape(cluster.UUID+"/"+r.FromBucket+"/"+r.ToBucket), c.defaultHeaders())
 }
+
+func (c *Couchbase) getUsers() ([]*User, error) {
+	users := []*User{}
+	path := "/settings/rbac/users"
+	err := c.n_get(path, &users, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (c *Couchbase) createUser(user *User) error {
+	params := user.FormEncode()
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	path := "/settings/rbac/users/"
+	if user.Domain == InternalAuthDomain {
+		path = path + string(InternalAuthDomain)
+	}
+	return c.n_put(path+"/"+user.ID, params, headers)
+}
+
+func (c *Couchbase) deleteUser(user *User) error {
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	path := "/settings/rbac/users/"
+	if user.Domain == InternalAuthDomain {
+		path = path + string(InternalAuthDomain)
+	}
+	return c.n_delete(path+"/"+user.ID, headers)
+}
+
+func (c *Couchbase) getUser(id string, domain AuthDomain) (*User, error) {
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	path := "/settings/rbac/users/"
+	if domain == InternalAuthDomain {
+		path = path + string(InternalAuthDomain)
+	}
+
+	user := &User{}
+	err := c.n_get(path+"/"+id, user, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}

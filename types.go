@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -316,6 +317,27 @@ type VBucketServerMap struct {
 
 type VBucketMap [][]int
 
+type AuthDomain string
+
+const (
+	InternalAuthDomain AuthDomain = "local"
+	LDAPAuthDomain                = "ldap"
+)
+
+type User struct {
+	Name     string     `json:"name"`
+	FullName string     `json:"fullName"`
+	Password string     `json:"password"`
+	Domain   AuthDomain `json:"domain"`
+	ID       string     `json:"id"`
+	Roles    []UserRole `json:"roles"`
+}
+
+type UserRole struct {
+	Role       string `json:"role"`
+	BucketName string `json:"bucket_name"`
+}
+
 type LogMessage struct {
 	Node       string `json:"node"`
 	Type       string `json:"type"`
@@ -627,4 +649,31 @@ type Replication struct {
 //   GET /settings/replications/<remote UUID>/<local bucket>/<remote bucket>
 type ReplicationSettings struct {
 	CompressionType string `url:"compressionType"`
+}
+
+// FormEncode represents user type in api compatible form
+func (u *User) FormEncode() []byte {
+	data := url.Values{}
+	if u.Password != "" {
+		data.Set("password", u.Password)
+	}
+
+	roles := u.RolesToStr()
+	data.Set("roles", strings.Join(roles, ","))
+	return []byte(data.Encode())
+}
+
+// RoleToStr translates roles to string array
+func (u *User) RolesToStr() []string {
+	roles := []string{}
+	for _, role := range u.Roles {
+		if role.BucketName != "" {
+			// bucket roles are enclosed in brackets
+			roles = append(roles, fmt.Sprintf("%s[%s]", role.Role, role.BucketName))
+		} else {
+			roles = append(roles, role.Role)
+		}
+	}
+	sort.Strings(roles)
+	return roles
 }

@@ -625,3 +625,19 @@ func (c *Couchbase) CreateReplication(r *Replication) error {
 func (c *Couchbase) DeleteReplication(r *Replication) error {
 	return c.deleteReplication(r)
 }
+
+func (c *Couchbase) GetUsers() ([]*User, error) {
+	return c.getUsers()
+}
+
+func (c *Couchbase) CreateUser(user *User) error {
+	return c.createUser(user)
+}
+
+func (c *Couchbase) DeleteUser(user *User) error {
+	return c.deleteUser(user)
+}
+
+func (c *Couchbase) GetUser(id string, domain AuthDomain) (*User, error) {
+	return c.getUser(id, domain)
+}
