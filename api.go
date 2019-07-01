@@ -254,6 +254,22 @@ func (c *Couchbase) getRebalanceTask() (*Task, error) {
 	return nil, fmt.Errorf("no rebalance task detected")
 }
 
+// getXDCRTasks returns tasks associated with XDCR replications.
+func (c *Couchbase) getXDCRTasks() (xdcrTasks []*Task, err error) {
+	tasks, err := c.getTasks()
+	if err != nil {
+		return
+	}
+
+	for _, task := range tasks {
+		if task.Type == "xdcr" {
+			xdcrTasks = append(xdcrTasks, task)
+		}
+	}
+
+	return
+}
+
 func (c *Couchbase) AddNode(hostname, username, password string, services ServiceList) error {
 	return c.addNode(hostname, username, password, services)
 }
@@ -584,4 +600,28 @@ func (c *Couchbase) GetAutoCompactionSettings() (*AutoCompactionSettings, error)
 
 func (c *Couchbase) SetAutoCompactionSettings(r *AutoCompactionSettings) error {
 	return c.setAutoCompactionSettings(r)
+}
+
+func (c *Couchbase) ListRemoteClusters() (RemoteClusters, error) {
+	return c.listRemoteClusters()
+}
+
+func (c *Couchbase) CreateRemoteCluster(r *RemoteCluster) error {
+	return c.createRemoteCluster(r)
+}
+
+func (c *Couchbase) DeleteRemoteCluster(r *RemoteCluster) error {
+	return c.deleteRemoteCluster(r)
+}
+
+func (c *Couchbase) ListReplications() ([]Replication, error) {
+	return c.listReplications()
+}
+
+func (c *Couchbase) CreateReplication(r *Replication) error {
+	return c.createReplication(r)
+}
+
+func (c *Couchbase) DeleteReplication(r *Replication) error {
+	return c.deleteReplication(r)
 }

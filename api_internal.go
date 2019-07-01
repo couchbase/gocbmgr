@@ -2,6 +2,7 @@ package cbmgr
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -436,4 +437,161 @@ func (c *Couchbase) setAutoCompactionSettings(r *AutoCompactionSettings) error {
 	}
 
 	return c.n_post("/controller/setAutoCompaction", data, headers)
+}
+
+// listRemoteClusters lists remote clusters for use by XDCR.
+func (c *Couchbase) listRemoteClusters() (RemoteClusters, error) {
+	r := RemoteClusters{}
+	if err := c.n_get("/pools/default/remoteClusters", &r, c.defaultHeaders()); err != nil {
+		return nil, err
+	}
+
+	// God only knows what this means, but lets assume we discard things
+	// that are "deleted".
+	filtered := RemoteClusters{}
+	for _, cluster := range r {
+		if !cluster.Deleted {
+			filtered = append(filtered, cluster)
+		}
+	}
+
+	return filtered, nil
+}
+
+// createRemoteCluster creates a new XDCR remote cluster.
+func (c *Couchbase) createRemoteCluster(r *RemoteCluster) error {
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	data, err := urlencoding.Marshal(r)
+	if err != nil {
+		return err
+	}
+
+	return c.n_post("/pools/default/remoteClusters", data, headers)
+}
+
+// deleteRemoteCluster deletes an existing XDCR remote cluster.
+func (c *Couchbase) deleteRemoteCluster(r *RemoteCluster) error {
+	return c.n_delete("/pools/default/remoteClusters/"+r.Name, c.defaultHeaders())
+}
+
+// getRemoteClusterByUUID helps manage the utter horror show that is XDCR
+// replications.
+func (c *Couchbase) getRemoteClusterByUUID(uuid string) (*RemoteCluster, error) {
+	clusters, err := c.listRemoteClusters()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, cluster := range clusters {
+		if cluster.UUID == uuid {
+			return &cluster, nil
+		}
+	}
+
+	return nil, fmt.Errorf("lookupClusterForUUID: no cluster found for uuid %v", uuid)
+}
+
+// getRemoteClusterByName helps manage the utter horror show that is XDCR
+// replications.
+func (c *Couchbase) getRemoteClusterByName(name string) (*RemoteCluster, error) {
+	clusters, err := c.listRemoteClusters()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, cluster := range clusters {
+		if cluster.Name == name {
+			return &cluster, nil
+		}
+	}
+
+	return nil, fmt.Errorf("lookupUUIDForCluster: no cluster found for name %v", name)
+}
+
+// getReplicationSettings helps manage the utter horror show that is XDCR
+// replications.
+func (c *Couchbase) getReplicationSettings(uuid, from, to string) (*ReplicationSettings, error) {
+	s := &ReplicationSettings{}
+	if err := c.n_get("/settings/replications/"+url.PathEscape(uuid+"/"+from+"/"+to), s, c.defaultHeaders()); err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// listReplications lists all replications in the cluster.  To make the Operator
+// code a million times simpler we do a lot of post processing and table joins
+// just to recover the same information used to create a replication.
+func (c *Couchbase) listReplications() ([]Replication, error) {
+	tasks, err := c.getXDCRTasks()
+	if err != nil {
+		return nil, err
+	}
+
+	replications := []Replication{}
+	for _, task := range tasks {
+		// Parse the target to recover lost information.
+		// Should be in the form /remoteClusters/c4c9af9ad62d8b5f665edac5ffc9c1be/buckets/default
+		if task.Target == "" {
+			return nil, fmt.Errorf("listReplications: target not populated")
+		}
+
+		parts := strings.Split(task.Target, "/")
+		if len(parts) != 5 {
+			return nil, fmt.Errorf("listReplications: target incorrectly formatted: %v", task.Target)
+		}
+
+		uuid := parts[2]
+		to := parts[4]
+
+		// Lookup the UUID to recover the cluster name.
+		cluster, err := c.getRemoteClusterByUUID(uuid)
+		if err != nil {
+			return nil, err
+		}
+
+		// Lookup the settings to recover the compression type.
+		settings, err := c.getReplicationSettings(uuid, task.Source, to)
+		if err != nil {
+			return nil, err
+		}
+
+		// By now your eyeballs will be dry from all the rolling they are doing.
+		replications = append(replications, Replication{
+			FromBucket:       task.Source,
+			ToCluster:        cluster.Name,
+			ToBucket:         to,
+			Type:             task.ReplicationType,
+			ReplicationType:  "continuous",
+			CompressionType:  settings.CompressionType,
+			FilterExpression: task.FilterExpression,
+		})
+	}
+
+	return replications, nil
+}
+
+// createReplication creates an XDCR replication between clusters.
+func (c *Couchbase) createReplication(r *Replication) error {
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	data, err := urlencoding.Marshal(r)
+	if err != nil {
+		return err
+	}
+
+	return c.n_post("/controller/createReplication", data, headers)
+}
+
+// deleteReplication deletes an existing XDCR replication between clusters.
+func (c *Couchbase) deleteReplication(r *Replication) error {
+	cluster, err := c.getRemoteClusterByName(r.ToCluster)
+	if err != nil {
+		return err
+	}
+
+	// WHAT IS THIS MADNESS?!??!?!?!?!??!
+	return c.n_delete("/controller/cancelXDCR/"+url.PathEscape(cluster.UUID+"/"+r.FromBucket+"/"+r.ToBucket), c.defaultHeaders())
 }

@@ -220,12 +220,23 @@ type PoolsInfo struct {
 	UUID       interface{} `json:"uuid"`
 }
 
+// Task is a base object to describe the very unfriendly polymorphic
+// task struct.
 type Task struct {
+	// Common attributes.
+	Type   string `json:"type"`
+	Status string `json:"status"`
+
+	// Rebalance attributes.
 	Progress float64 `json:"progress"`
-	Type     string  `json:"type"`
-	Status   string  `json:"status"`
 	Stale    bool    `json:"statusIsStale"`
 	Timeout  bool    `json:"masterRequestTimedOut"`
+
+	// Replication attributes.
+	Source           string `json:"source"`
+	Target           string `json:"target"`
+	ReplicationType  string `url:"replicationType"`
+	FilterExpression string `url:"filterExpression"`
 }
 
 // PoolsDefaults is the data that may be posted via the /pools/default API
@@ -590,4 +601,36 @@ type AutoCompactionAutoCompactionSettings struct {
 type AutoCompactionSettings struct {
 	AutoCompactionSettings AutoCompactionAutoCompactionSettings `json:"autoCompactionSettings" url:""`
 	PurgeInterval          float64                              `json:"purgeInterval" url:"purgeInterval"`
+}
+
+// RemoteClusters is returned by
+//   GET /pools/default/remoteClusters
+type RemoteClusters []RemoteCluster
+
+// RemoteCluster describes an XDCR remote cluster.
+type RemoteCluster struct {
+	Name     string `json:"name" url:"name"`
+	Hostname string `json:"hostname"  url:"hostname"`
+	Username string `json:"username"  url:"username"`
+	Password string `json:"password"  url:"password"`
+	UUID     string `json:"uuid"  url:"uuid"`
+	Deleted  bool   `json:"deleted"`
+}
+
+// Replication describes an XDCR replication as set with
+//   POST /controller/createReplication
+type Replication struct {
+	FromBucket       string `url:"fromBucket"`
+	ToCluster        string `url:"toCluster"`
+	ToBucket         string `url:"toBucket"`
+	Type             string `url:"type"`
+	ReplicationType  string `url:"replicationType"`
+	CompressionType  string `url:"compressionType,omitempty"`
+	FilterExpression string `url:"filterExpression,omitempty"`
+}
+
+// ReplicationSettings describes an XDCR replication settings as returned by
+//   GET /settings/replications/<remote UUID>/<local bucket>/<remote bucket>
+type ReplicationSettings struct {
+	CompressionType string `url:"compressionType"`
 }
