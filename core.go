@@ -13,8 +13,9 @@ import (
 	"net"
 	"net/http"
 	"reflect"
-	"strings"
 	"time"
+
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 const (
@@ -27,6 +28,8 @@ const (
 
 	tcpConnectTimeout = 5 * time.Second
 )
+
+var log = logf.Log.WithName("client")
 
 // newClient creates a new HTTP client which offers connection persistence and
 // also checks that the UUID of a host is what we expect when dialing before
@@ -183,6 +186,64 @@ func (c *Couchbase) makeClient() {
 	c.client = client
 }
 
+// doRequest is the generic request handler for all client calls.
+func (c *Couchbase) doRequest(request *http.Request, result interface{}) error {
+	// Do the request recording the time taken.
+	start := time.Now()
+	response, err := c.client.Do(request)
+	if err != nil {
+		return err
+	}
+	delta := time.Since(start)
+
+	// Read the body so we can display it for really verbose debugging.
+	defer response.Body.Close()
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+
+	// Log the request.  Careful here, higher levels of verbosity generate a huge
+	// amount more log traffic.
+	log.V(1).Info("http",
+		"method", request.Method,
+		"url", request.URL.String(),
+		"status", response.Status,
+		"time_ms", float64(delta.Nanoseconds())/1000000.0,
+	)
+	log.V(2).Info("http",
+		"body", string(body),
+	)
+
+	// Anything outside of a 2XX we regard as an error.
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return fmt.Errorf("request failed %v %v %v: %v", request.Method, request.URL.String(), response.Status, body)
+	}
+
+	// Don't care about the returned data, just report success.
+	if result == nil {
+		return nil
+	}
+
+	// Handle the content types we expect.
+	switch contentType := response.Header.Get("Content-Type"); contentType {
+	case "application/json":
+		if err := json.Unmarshal(body, result); err != nil {
+			return err
+		}
+	case "text/plain":
+		s, ok := result.(*string)
+		if !ok {
+			return fmt.Errorf("unexpected type decode for text/plain")
+		}
+		*s = string(body)
+	default:
+		fmt.Errorf("unexpected content type %s", contentType)
+	}
+
+	return nil
+}
+
 func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) error {
 	errs := []error{}
 	for _, endpoint := range c.endpoints {
@@ -190,20 +251,12 @@ func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) 
 		if err != nil {
 			return ClientError{"request creation", err}
 		}
-
 		req.Header = headers
-
-		response, err := c.client.Do(req)
-		if err != nil {
+		if err := c.doRequest(req, result); err != nil {
 			errs = append(errs, err)
-		} else {
-			if rerr := c.n_handleResponse(response, result); rerr != nil {
-				errs = append(errs, rerr)
-			} else {
-				return nil
-			}
+			continue
 		}
-
+		return nil
 	}
 
 	return BulkError{errs}
@@ -217,17 +270,11 @@ func (c *Couchbase) n_post(path string, data []byte, headers http.Header) error 
 			return ClientError{"request creation", err}
 		}
 		req.Header = headers
-
-		response, err := c.client.Do(req)
-		if err != nil {
+		if err := c.doRequest(req, nil); err != nil {
 			errs = append(errs, err)
-		} else {
-			if rerr := c.n_handleResponse(response, nil); rerr != nil {
-				errs = append(errs, rerr)
-			} else {
-				return nil
-			}
+			continue
 		}
+		return nil
 	}
 
 	return BulkError{errs}
@@ -241,17 +288,11 @@ func (c *Couchbase) n_put(path string, data []byte, headers http.Header) error {
 			return ClientError{"request creation", err}
 		}
 		req.Header = headers
-
-		response, err := c.client.Do(req)
-		if err != nil {
+		if err := c.doRequest(req, nil); err != nil {
 			errs = append(errs, err)
-		} else {
-			if rerr := c.n_handleResponse(response, nil); rerr != nil {
-				errs = append(errs, rerr)
-			} else {
-				return nil
-			}
+			continue
 		}
+		return nil
 	}
 
 	return BulkError{errs}
@@ -265,98 +306,14 @@ func (c *Couchbase) n_delete(path string, headers http.Header) error {
 			return ClientError{"request creation", err}
 		}
 		req.Header = headers
-
-		response, err := c.client.Do(req)
-		if err != nil {
+		if err := c.doRequest(req, nil); err != nil {
 			errs = append(errs, err)
-		} else {
-			if rerr := c.n_handleResponse(response, nil); rerr != nil {
-				errs = append(errs, rerr)
-			} else {
-				return nil
-			}
+			continue
 		}
+		return nil
 	}
 
 	return BulkError{errs}
-}
-
-func (c *Couchbase) n_handleResponse(response *http.Response, result interface{}) error {
-	host := response.Request.Host
-	path := response.Request.URL.Path
-	if response.StatusCode == http.StatusOK || response.StatusCode == http.StatusAccepted || response.StatusCode == http.StatusCreated {
-		defer response.Body.Close()
-		if result != nil {
-			switch contentType := response.Header.Get("Content-Type"); contentType {
-			case "application/json":
-				decoder := json.NewDecoder(response.Body)
-				decoder.UseNumber()
-				err := decoder.Decode(result)
-				if err != nil {
-					return ClientError{"unmarshal json response", err}
-				}
-			case "text/plain":
-				res, ok := result.(*TextPlainResponse)
-				if !ok {
-					return ClientError{"unmarshal text response", fmt.Errorf("invalid result type specified for content of type text/plain")}
-				}
-				data, err := ioutil.ReadAll(response.Body)
-				if err != nil {
-					return ClientError{"unmarshal text response", err}
-				}
-				res.Data = make([]byte, len(data))
-				copy(res.Data, data)
-			default:
-				return ClientError{"unmarshal response", fmt.Errorf("unhandled content type %s", contentType)}
-			}
-		}
-
-		return nil
-	} else if response.StatusCode == http.StatusBadRequest {
-		defer response.Body.Close()
-		data, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			return ClientError{"unmarshal json response", err}
-		}
-
-		var errMapData errMapoverlay
-		decoder := json.NewDecoder(bytes.NewReader(data))
-		decoder.UseNumber()
-		err = decoder.Decode(&errMapData)
-		if err == nil {
-			return ServerError{errMapData.ErrorMap(), host, path, response.StatusCode}
-		}
-
-		var listData []string
-		decoder = json.NewDecoder(bytes.NewReader(data))
-		err = decoder.Decode(&listData)
-		if err == nil {
-			return ServerError{map[string]string{"error": listData[0]}, host, path, response.StatusCode}
-		}
-
-		return ServerError{map[string]string{"body": "Client error processing response"}, host, path, response.StatusCode}
-	} else if response.StatusCode == http.StatusUnauthorized {
-		return ServerError{map[string]string{"auth": "Invalid username and password"}, host, path, response.StatusCode}
-	} else if response.StatusCode == http.StatusForbidden {
-		defer response.Body.Close()
-		type overlay struct {
-			Message     string
-			Permissions []string
-		}
-
-		var data overlay
-		decoder := json.NewDecoder(response.Body)
-		decoder.UseNumber()
-		err := decoder.Decode(&data)
-		if err != nil {
-			return ServerError{map[string]string{"body": err.Error()}, host, path, response.StatusCode}
-		}
-
-		msg := data.Message + ": " + strings.Join(data.Permissions, ", ")
-		return ServerError{map[string]string{"permissions": msg}, host, path, response.StatusCode}
-	} else {
-		return ServerError{map[string]string{}, host, path, response.StatusCode}
-	}
 }
 
 func (c *Couchbase) defaultHeaders() http.Header {

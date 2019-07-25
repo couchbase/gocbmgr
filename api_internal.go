@@ -289,9 +289,9 @@ func (c *Couchbase) uploadClusterCACert(pem []byte) error {
 }
 
 func (c *Couchbase) getClusterCACert() ([]byte, error) {
-	cert := &TextPlainResponse{}
-	err := c.n_get("/pools/default/certificate", cert, c.defaultHeaders())
-	return cert.Data, err
+	var cert string
+	err := c.n_get("/pools/default/certificate", &cert, c.defaultHeaders())
+	return []byte(cert), err
 }
 
 func (c *Couchbase) reloadNodeCert() error {

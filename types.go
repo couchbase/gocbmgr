@@ -505,12 +505,6 @@ type ServerGroupsUpdate struct {
 	Groups []ServerGroupUpdate `json:"groups"`
 }
 
-// TextPlainResponse is used to decode text/plain encoded data.  The
-type TextPlainResponse struct {
-	// Data will be initialized by the core response handler.
-	Data []byte
-}
-
 // AutoCompactionDatabaseFragmentationThreshold indicates the percentage or size before a bucket
 // compaction is triggered.
 type AutoCompactionDatabaseFragmentationThreshold struct {

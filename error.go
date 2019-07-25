@@ -16,40 +16,6 @@ const (
 	Mismatch                 = "mismatch"
 )
 
-// Rebalance API will set an int flag to indicate
-// the type of BadRequest that has occurred
-const errRebalanceRequestFlag int = 1
-
-// errMapoverlay represents possible error responses from couchbase server
-type errMapoverlay struct {
-	Errors                 map[string]string
-	DeltaRecoveryErrFlag   int `json:"deltaRecoveryNotPossible"`
-	EmptyKnownNodesErrFlag int `json:"empty_known_nodes"`
-	MismatchErrFlag        int `json:"mismatch"`
-}
-
-// ErrorMap combines all error responses into
-// single map with readable descriptions
-func (e errMapoverlay) ErrorMap() map[string]string {
-	m := e.Errors
-	if m == nil {
-		m = make(map[string]string)
-	}
-
-	// Detect type of error that cased a BadRequest to
-	// be returned and create a readable error output
-	switch errRebalanceRequestFlag {
-	case e.DeltaRecoveryErrFlag:
-		m[DeltaRecoveryNotPossible] = "requireDeltaRecovery was set to true but delta recovery cannot be performed"
-	case e.MismatchErrFlag:
-		m[Mismatch] = "either knownNodes didn't match the set of nodes known to the cluster or ejectedNodes listed an unknown node"
-	case e.EmptyKnownNodesErrFlag:
-		m[EmptyKnownNodes] = "knownNodes was either omitted or empty"
-	}
-
-	return m
-}
-
 func NewErrorWaitNodeTimeout(hostname string) error {
 	emsg := fmt.Errorf("timed out waiting for node %s", hostname)
 	return emsg
