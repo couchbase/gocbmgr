@@ -217,7 +217,7 @@ func (c *Couchbase) doRequest(request *http.Request, result interface{}) error {
 
 	// Anything outside of a 2XX we regard as an error.
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return fmt.Errorf("request failed %v %v %v: %v", request.Method, request.URL.String(), response.Status, body)
+		return fmt.Errorf("request failed %v %v %v: %v", request.Method, request.URL.String(), response.Status, string(body))
 	}
 
 	// Don't care about the returned data, just report success.
