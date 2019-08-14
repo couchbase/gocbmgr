@@ -333,6 +333,54 @@ type User struct {
 	Roles    []UserRole `json:"roles"`
 }
 
+type LDAPEncryption string
+
+const (
+	LDAPEncryptionNone     LDAPEncryption = "false"
+	LDAPEncryptionStartTLS                = "StartTLSExtension"
+	LDAPEncryptionTLS                     = "TLS"
+)
+
+type LDAPSettings struct {
+	// Enables using LDAP to authenticate users.
+	AuthenticationEnabled bool `json:"authentication_enabled"`
+	// Enables use of LDAP groups for authorization.
+	AuthorizationEnabled bool `json:"authorization_enabled"`
+	// List of LDAP hosts.
+	Hosts []string `json:"hosts"`
+	// LDAP port
+	Port int `json:"port"`
+	// Encryption method to communicate with LDAP servers.
+	// Can be StartTLSExtension, TLS, or false.
+	Encryption LDAPEncryption `json:"encryption",omitempty`
+	// Whether server certificate validation be enabled
+	EnableCertValidation bool `json:"server_cert_validation"`
+	// Certificate in PEM format to be used in LDAP server certificate validation
+	CACert string `json:"cacert"`
+	// LDAP query, to get the users' groups by username in RFC4516 format.
+	GroupsQuery string `json:"groups_query",omitempty`
+	// DN to use for searching users and groups synchronization.
+	QueryDN string `json:"query_dn",omitempty`
+	// Password for query_dn user.
+	QueryPass string `json:"query_pass",omitempty`
+	// User to distinguished name (DN) mapping. If none is specified,
+	// the username is used as the user’s distinguished name.
+	UserDNMapping *[]LDAPUserDNMapping `json:"user_dn_mapping",omitempty`
+	// If enabled Couchbase server will try to recursively search for groups
+	// for every discovered ldap group. groups_query will be user for the search.
+	NestedGroupsEnabled bool `json:"nested_groups_enabled",omitempty`
+	// Maximum number of recursive groups requests the server is allowed to perform.
+	// Requires NestedGroupsEnabled.  Values between 1 and 100: the default is 10.
+	NestedGroupsMaxDepth uint64 `json:"nested_groups_max_depth",omitempty`
+	// Lifetime of values in cache in milliseconds. Default 300000 ms.
+	CacheValueLifetime uint64 `json:"cache_value_lifetime",omitempty`
+}
+
+type LDAPUserDNMapping struct {
+	Regex    string `json:"re"`
+	Template string `json:"template"`
+}
+
 type UserRole struct {
 	Role       string `json:"role"`
 	BucketName string `json:"bucket_name"`
@@ -676,4 +724,93 @@ func (u *User) RolesToStr() []string {
 	}
 	sort.Strings(roles)
 	return roles
+}
+
+// BUG: MB-35567
+// Normal unmarshlling doesn't work because
+// LDAP encryption should use 'None' instead of false
+func (s *LDAPSettings) UnmarshalJSON(data []byte) error {
+
+	var jsonData map[string]interface{}
+	err := json.Unmarshal(data, &jsonData)
+	if err != nil {
+		return err
+	}
+
+	type LDAPSettingsAlias LDAPSettings
+	settings := LDAPSettingsAlias{}
+
+	// convert encryption to string if specified as a bool
+	if value, ok := jsonData["encryption"]; ok {
+		if _, ok := value.(bool); ok {
+			jsonData["encryption"] = LDAPEncryptionNone
+			data, err = json.Marshal(jsonData)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if err := json.Unmarshal(data, &settings); err != nil {
+		return err
+	}
+
+	*s = LDAPSettings(settings)
+	return nil
+}
+
+func (s *LDAPSettings) FormEncode() ([]byte, error) {
+	data := url.Values{}
+	data.Set("hosts", strings.Join(s.Hosts, ","))
+	data.Set("port", strconv.Itoa(s.Port))
+	data.Set("query_dn", s.QueryDN)
+	data.Set("query_pass", s.QueryPass)
+	data.Set("authentication_enabled", strconv.FormatBool(s.AuthenticationEnabled))
+	data.Set("authorization_enabled", strconv.FormatBool(s.AuthorizationEnabled))
+	data.Set("encryption", string(s.Encryption))
+	data.Set("server_cert_validation", strconv.FormatBool(s.EnableCertValidation))
+	if s.EnableCertValidation {
+		data.Set("cacert", string(s.CACert))
+	}
+
+	if s.AuthorizationEnabled && (s.UserDNMapping != nil) {
+		dnData, err := json.Marshal(*s.UserDNMapping)
+		if err != nil {
+			return []byte{}, err
+		}
+		data.Set("user_dn_mapping", string(dnData))
+	}
+
+	if s.AuthorizationEnabled {
+		data.Set("groups_query", s.GroupsQuery)
+	}
+
+	if s.NestedGroupsEnabled {
+		data.Set("nested_groups_enabled", BoolToStr(s.NestedGroupsEnabled))
+		data.Set("nested_groups_max_depth", strconv.FormatUint(s.NestedGroupsMaxDepth, 10))
+	}
+
+	if s.CacheValueLifetime > 0 {
+		data.Set("cache_value_lifetime", strconv.FormatUint(s.CacheValueLifetime, 10))
+	}
+	return []byte(data.Encode()), nil
+}
+
+func (in *LDAPSettings) DeepCopyInto(out *LDAPSettings) {
+	*out = *in
+	if in.UserDNMapping != nil {
+		in, out := &in.UserDNMapping, &out.UserDNMapping
+		*out = new([]LDAPUserDNMapping)
+		*out = *in
+	}
+	return
+}
+
+func (in *LDAPSettings) DeepCopy() *LDAPSettings {
+	if in == nil {
+		return nil
+	}
+	out := new(LDAPSettings)
+	in.DeepCopyInto(out)
+	return out
 }

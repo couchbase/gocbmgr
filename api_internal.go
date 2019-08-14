@@ -646,3 +646,22 @@ func (c *Couchbase) getUser(id string, domain AuthDomain) (*User, error) {
 
 	return user, nil
 }
+
+func (c *Couchbase) getLDAPSettings() (*LDAPSettings, error) {
+	settings := &LDAPSettings{}
+	err := c.n_get("/settings/ldap", settings, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+	return settings, nil
+}
+
+func (c *Couchbase) setLDAPSettings(settings *LDAPSettings) error {
+	params, err := settings.FormEncode()
+	if err != nil {
+		return err
+	}
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+	return c.n_post("/settings/ldap", params, headers)
+}

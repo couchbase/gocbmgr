@@ -641,3 +641,11 @@ func (c *Couchbase) DeleteUser(user *User) error {
 func (c *Couchbase) GetUser(id string, domain AuthDomain) (*User, error) {
 	return c.getUser(id, domain)
 }
+
+func (c *Couchbase) GetLDAPSettings() (*LDAPSettings, error) {
+	return c.getLDAPSettings()
+}
+
+func (c *Couchbase) SetLDAPSettings(settings *LDAPSettings) error {
+	return c.setLDAPSettings(settings)
+}
