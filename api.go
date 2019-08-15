@@ -642,6 +642,22 @@ func (c *Couchbase) GetUser(id string, domain AuthDomain) (*User, error) {
 	return c.getUser(id, domain)
 }
 
+func (c *Couchbase) GetGroups() ([]*Group, error) {
+	return c.getGroups()
+}
+
+func (c *Couchbase) CreateGroup(group *Group) error {
+	return c.createGroup(group)
+}
+
+func (c *Couchbase) DeleteGroup(group *Group) error {
+	return c.deleteGroup(group)
+}
+
+func (c *Couchbase) GetGroup(id string) (*Group, error) {
+	return c.getGroup(id)
+}
+
 func (c *Couchbase) GetLDAPSettings() (*LDAPSettings, error) {
 	return c.getLDAPSettings()
 }

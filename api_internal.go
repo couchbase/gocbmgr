@@ -647,6 +647,52 @@ func (c *Couchbase) getUser(id string, domain AuthDomain) (*User, error) {
 	return user, nil
 }
 
+func (c *Couchbase) getGroups() ([]*Group, error) {
+	groups := []*Group{}
+	path := "/settings/rbac/groups"
+	err := c.n_get(path, &groups, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+	return groups, nil
+}
+
+func (c *Couchbase) createGroup(group *Group) error {
+	data := url.Values{}
+	roles := RolesToStr(group.Roles)
+	data.Set("roles", strings.Join(roles, ","))
+	data.Set("description", group.Description)
+	data.Set("ldap_group_ref", group.LDAPGroupRef)
+
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	path := "/settings/rbac/groups/" + group.ID
+	return c.n_put(path, []byte(data.Encode()), headers)
+}
+
+func (c *Couchbase) deleteGroup(group *Group) error {
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	path := "/settings/rbac/groups/" + group.ID
+	return c.n_delete(path, headers)
+}
+
+func (c *Couchbase) getGroup(id string) (*Group, error) {
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	path := "/settings/rbac/groups/" + id
+	group := &Group{}
+	err := c.n_get(path, group, c.defaultHeaders())
+	if err != nil {
+		return nil, err
+	}
+
+	return group, nil
+}
+
 func (c *Couchbase) getLDAPSettings() (*LDAPSettings, error) {
 	settings := &LDAPSettings{}
 	err := c.n_get("/settings/ldap", settings, c.defaultHeaders())

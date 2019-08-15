@@ -333,6 +333,13 @@ type User struct {
 	Roles    []UserRole `json:"roles"`
 }
 
+type Group struct {
+	ID           string     `json:"id"`
+	Roles        []UserRole `json:"roles"`
+	Description  string     `json:"description"`
+	LDAPGroupRef string     `json:"ldap_group_ref"`
+}
+
 type LDAPEncryption string
 
 const (
@@ -713,15 +720,15 @@ func (u *User) FormEncode() []byte {
 		data.Set("password", u.Password)
 	}
 
-	roles := u.RolesToStr()
+	roles := RolesToStr(u.Roles)
 	data.Set("roles", strings.Join(roles, ","))
 	return []byte(data.Encode())
 }
 
 // RoleToStr translates roles to string array
-func (u *User) RolesToStr() []string {
+func RolesToStr(userRoles []UserRole) []string {
 	roles := []string{}
-	for _, role := range u.Roles {
+	for _, role := range userRoles {
 		if role.BucketName != "" {
 			// bucket roles are enclosed in brackets
 			roles = append(roles, fmt.Sprintf("%s[%s]", role.Role, role.BucketName))
