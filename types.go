@@ -673,12 +673,19 @@ type RemoteClusters []RemoteCluster
 
 // RemoteCluster describes an XDCR remote cluster.
 type RemoteCluster struct {
-	Name     string `json:"name" url:"name"`
-	Hostname string `json:"hostname"  url:"hostname"`
-	Username string `json:"username"  url:"username"`
-	Password string `json:"password"  url:"password"`
-	UUID     string `json:"uuid"  url:"uuid"`
-	Deleted  bool   `json:"deleted"`
+	Name       string `json:"name" url:"name"`
+	Hostname   string `json:"hostname"  url:"hostname"`
+	Username   string `json:"username"  url:"username"`
+	Password   string `json:"password"  url:"password"`
+	UUID       string `json:"uuid"  url:"uuid"`
+	Deleted    bool   `json:"deleted"`
+	SecureType string `json:"secureType" url:"secureType,omitempty"`
+
+	// These are here for convenience and should only be populated
+	// after comparison as they are not supplied by the API.
+	CA          string `json:"-" url:"certificate,omitempty"`
+	Certificate string `json:"-" url:"clientCertificate,omitempty"`
+	Key         string `json:"-" url:"clientKey,omitempty"`
 }
 
 // Replication describes an XDCR replication as set with

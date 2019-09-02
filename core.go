@@ -212,7 +212,7 @@ func (c *Couchbase) doRequest(request *http.Request, result interface{}) error {
 		"time_ms", float64(delta.Nanoseconds())/1000000.0,
 	)
 	log.V(2).Info("http",
-		"body", string(body),
+		"response body", string(body),
 	)
 
 	// Anything outside of a 2XX we regard as an error.
@@ -265,6 +265,7 @@ func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) 
 func (c *Couchbase) n_post(path string, data []byte, headers http.Header) error {
 	errs := []error{}
 	for _, endpoint := range c.endpoints {
+		log.V(2).Info("http", "request body", string(data))
 		req, err := http.NewRequest("POST", endpoint+path, bytes.NewBuffer(data))
 		if err != nil {
 			return ClientError{"request creation", err}
