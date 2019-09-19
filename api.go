@@ -23,12 +23,10 @@ type TLSAuth struct {
 	CACert []byte
 	// Optional client authentication
 	ClientAuth *TLSClientAuth
-	// Insecure is just this
-	// DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING
-	Insecure bool
 }
 
 // Client certificate authentication prefixes, used to extract the user name
+// All fields must be specified, so no "omitempty" tags.
 type ClientCertAuthPrefix struct {
 	Path      string `json:"path"`
 	Prefix    string `json:"prefix"`
@@ -36,6 +34,7 @@ type ClientCertAuthPrefix struct {
 }
 
 // Client certificate authentication settings
+// All fields must be specified, so no "omitempty" tags.
 type ClientCertAuth struct {
 	// Must be 'disable', 'enable', 'mandatory'
 	State string `json:"state"`
@@ -525,6 +524,10 @@ func (c *Couchbase) ReloadNodeCert() error {
 
 func (c *Couchbase) GetClusterCACert() ([]byte, error) {
 	return c.getClusterCACert()
+}
+
+func (c *Couchbase) GetClientCertAuth() (*ClientCertAuth, error) {
+	return c.getClientCertAuth()
 }
 
 func (c *Couchbase) SetClientCertAuth(settings *ClientCertAuth) error {

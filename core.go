@@ -137,8 +137,7 @@ func (c *Couchbase) makeClient() {
 		var tlsClientConfig *tls.Config = nil
 		if c.tls != nil {
 			tlsClientConfig = &tls.Config{
-				RootCAs:            x509.NewCertPool(),
-				InsecureSkipVerify: c.tls.Insecure,
+				RootCAs: x509.NewCertPool(),
 			}
 			// At the very least we need a CA certificate to attain trust in the remote end
 			if ok := tlsClientConfig.RootCAs.AppendCertsFromPEM(c.tls.CACert); !ok {

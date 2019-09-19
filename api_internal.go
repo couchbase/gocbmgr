@@ -299,6 +299,14 @@ func (c *Couchbase) reloadNodeCert() error {
 	return c.n_post("/node/controller/reloadCertificate", []byte{}, headers)
 }
 
+func (c *Couchbase) getClientCertAuth() (*ClientCertAuth, error) {
+	clientAuth := &ClientCertAuth{}
+	if err := c.n_get("/settings/clientCertAuth", clientAuth, c.defaultHeaders()); err != nil {
+		return nil, err
+	}
+	return clientAuth, nil
+}
+
 func (c *Couchbase) setClientCertAuth(settings *ClientCertAuth) error {
 	data, err := json.Marshal(settings)
 	if err != nil {
