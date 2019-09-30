@@ -93,9 +93,11 @@ func (c *Couchbase) stopRebalance() error {
 	return c.n_post("/controller/stopRebalance", []byte(data.Encode()), headers)
 }
 
-func (c *Couchbase) failover(otpNode string) error {
+func (c *Couchbase) failover(otpNodes []string) error {
 	data := url.Values{}
-	data.Set("otpNode", otpNode)
+	for _, otpNode := range otpNodes {
+		data.Add("otpNode", otpNode)
+	}
 
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)

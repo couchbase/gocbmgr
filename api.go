@@ -409,19 +409,27 @@ func (c *Couchbase) StopRebalance() error {
 	return c.stopRebalance()
 }
 
-func (c *Couchbase) Failover(nodeToRemove string) error {
+func (c *Couchbase) Failover(nodesToRemove []string) error {
 	cluster, err := c.getPoolsDefault()
 	if err != nil {
 		return err
 	}
 
-	for _, node := range cluster.Nodes {
-		if node.HostName == nodeToRemove {
-			return c.failover(node.OTPNode)
+	otpNodes := []string{}
+	for _, nodeToRemove := range nodesToRemove {
+		for _, node := range cluster.Nodes {
+			if node.HostName == nodeToRemove {
+				otpNodes = append(otpNodes, node.OTPNode)
+				break
+			}
 		}
 	}
 
-	return NewErrorClusterNodeNotFound(nodeToRemove)
+	if len(otpNodes) != len(nodesToRemove) {
+		return fmt.Errorf("unable to find nodes to failover")
+	}
+
+	return c.failover(otpNodes)
 }
 
 func (c *Couchbase) CreateBucket(bucket *Bucket) error {
