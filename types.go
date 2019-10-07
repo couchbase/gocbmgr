@@ -499,7 +499,9 @@ func (b *Bucket) FormEncode() []byte {
 	data.Set("name", b.BucketName)
 	data.Set("bucketType", b.BucketType)
 	data.Set("ramQuotaMB", strconv.Itoa(b.BucketMemoryQuota))
-	data.Set("replicaNumber", strconv.Itoa(b.BucketReplicas))
+	if b.BucketType != "memcached" {
+		data.Set("replicaNumber", strconv.Itoa(b.BucketReplicas))
+	}
 	data.Set("authType", "sasl")
 	data.Set("compressionMode", string(b.CompressionMode))
 	data.Set("flushEnabled", BoolToStr(b.EnableFlush))
