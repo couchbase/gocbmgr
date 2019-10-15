@@ -150,25 +150,29 @@ type AlternateAddressesExternalPorts struct {
 	AdminServicePort int32 `url:"mgmt,omitempty" json:"mgmt"`
 	// AdminPortSSL is the admin service K8S node port (mapped to 18091)
 	AdminServicePortTLS int32 `url:"mgmtSSL,omitempty" json:"mgmtSSL"`
-	// ViewServicePort is the view service K8S node port (mapped to 8092)
-	ViewServicePort int32 `url:"capi,omitempty" json:"capi"`
-	// ViewServicePortSSL is the view service K8S node port (mapped to 8092)
-	ViewServicePortTLS int32 `url:"capiSSL,omitempty" json:"capiSSL"`
+	// IndexServicePort is the view service K8S node port (mapped to 8092)
+	IndexServicePort int32 `url:"capi,omitempty" json:"capi"`
+	// IndexServicePortSSL is the view service K8S node port (mapped to 8092)
+	IndexServicePortTLS int32 `url:"capiSSL,omitempty" json:"capiSSL"`
 	// QueryServicePort is the query service K8S node port (mapped to 8093)
 	QueryServicePort int32 `url:"n1ql,omitempty" json:"n1ql"`
 	// QueryServicePortTLS is the query service K8S node port (mapped to 18093)
 	QueryServicePortTLS int32 `url:"n1qlSSL,omitempty" json:"n1qlSSL"`
-	// FtsServicePort is the full text search service K8S node port (mapped to 8094)
-	FtsServicePort int32 `url:"fts,omitempty" json:"fts"`
-	// FtsServicePortTLS is the full text search service K8S node port (mapped to 18094)
-	FtsServicePortTLS int32 `url:"ftsSSL,omitempty" json:"ftsSSL"`
+	// SearchServicePort is the full text search service K8S node port (mapped to 8094)
+	SearchServicePort int32 `url:"fts,omitempty" json:"fts"`
+	// SearchServicePortTLS is the full text search service K8S node port (mapped to 18094)
+	SearchServicePortTLS int32 `url:"ftsSSL,omitempty" json:"ftsSSL"`
 	// AnalyticsServicePort is the analytics service K8S node port (mapped to 8095)
 	AnalyticsServicePort int32 `url:"cbas,omitempty" json:"cbas"`
 	// AnalyticsServicePortTLS is the analytics service K8S node port (mapped to 18095)
 	AnalyticsServicePortTLS int32 `url:"cbasSSL,omitempty" json:"cbasSSL"`
+	// EventingServicePort is the eventing service K8S node port (mapped to 8096)
+	EventingServicePort int32 `url:"eventingAdminPort,omitempty" json:"eventingAdminPort"`
+	// EventingServicePortTLS is the eventing service K8S node port (mapped to 18096)
+	EventingServicePortTLS int32 `url:"eventingSSL,omitempty" json:"eventingSSL"`
 	// DataServicePort is the data service K8S node port (mapped to 11210)
 	DataServicePort int32 `url:"kv,omitempty" json:"kv"`
-	// DataServicePortSSL is the data service K8S node port (mapped to 11207)
+	// DataServicePortTLS is the data service K8S node port (mapped to 11207)
 	DataServicePortTLS int32 `url:"kvSSL,omitempty" json:"kvSSL"`
 }
 
