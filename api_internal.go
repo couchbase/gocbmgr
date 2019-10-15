@@ -20,7 +20,7 @@ func (c *Couchbase) addNode(hostname, username, password string, services Servic
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
-	return c.n_post("/controller/addNode", []byte(data.Encode()), headers)
+	return c.n_post("/controller/addNode", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) cancelAddNode(otpNode string) error {
@@ -30,7 +30,7 @@ func (c *Couchbase) cancelAddNode(otpNode string) error {
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
-	return c.n_post("/controller/ejectNode", []byte(data.Encode()), headers)
+	return c.n_post("/controller/ejectNode", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) cancelAddBackNode(otpNode string) error {
@@ -40,7 +40,7 @@ func (c *Couchbase) cancelAddBackNode(otpNode string) error {
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
-	return c.n_post("/controller/reFailOver", []byte(data.Encode()), headers)
+	return c.n_post("/controller/reFailOver", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) getPools() (*PoolsInfo, error) {
@@ -81,7 +81,7 @@ func (c *Couchbase) rebalance(allNodes, ejectNodes []string) error {
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
-	return c.n_post("/controller/rebalance", []byte(data.Encode()), headers)
+	return c.n_post("/controller/rebalance", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) stopRebalance() error {
@@ -90,7 +90,7 @@ func (c *Couchbase) stopRebalance() error {
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
-	return c.n_post("/controller/stopRebalance", []byte(data.Encode()), headers)
+	return c.n_post("/controller/stopRebalance", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) failover(otpNodes []string) error {
@@ -102,7 +102,7 @@ func (c *Couchbase) failover(otpNodes []string) error {
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
-	return c.n_post("/controller/failOver", []byte(data.Encode()), headers)
+	return c.n_post("/controller/failOver", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) setPoolsDefault(defaults *PoolsDefaults) error {
@@ -114,7 +114,7 @@ func (c *Couchbase) setPoolsDefault(defaults *PoolsDefaults) error {
 		return err
 	}
 
-	return c.n_post("/pools/default", data, headers)
+	return c.n_post("/pools/default", data, nil, headers)
 }
 
 func (c *Couchbase) setStoragePaths(dataPath, indexPath string, analyticsPaths []string) error {
@@ -130,7 +130,7 @@ func (c *Couchbase) setStoragePaths(dataPath, indexPath string, analyticsPaths [
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
-	return c.n_post("/nodes/self/controller/settings", []byte(data.Encode()), headers)
+	return c.n_post("/nodes/self/controller/settings", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) setHostname(hostname string) error {
@@ -140,7 +140,7 @@ func (c *Couchbase) setHostname(hostname string) error {
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
-	return c.n_post("/node/controller/rename", []byte(data.Encode()), headers)
+	return c.n_post("/node/controller/rename", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) getIndexSettings() (*IndexSettings, error) {
@@ -166,7 +166,7 @@ func (c *Couchbase) setIndexSettings(mode IndexStorageMode, threads, memSnapInte
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
 
-	return c.n_post("/settings/indexes", []byte(data.Encode()), headers)
+	return c.n_post("/settings/indexes", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) setServices(services ServiceList) error {
@@ -176,7 +176,7 @@ func (c *Couchbase) setServices(services ServiceList) error {
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
 
-	return c.n_post("/node/controller/setupServices", []byte(data.Encode()), headers)
+	return c.n_post("/node/controller/setupServices", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) setWebSettings(username, password string, port int) error {
@@ -188,14 +188,14 @@ func (c *Couchbase) setWebSettings(username, password string, port int) error {
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
 
-	return c.n_post("/settings/web", []byte(data.Encode()), headers)
+	return c.n_post("/settings/web", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) createBucket(bucket *Bucket) error {
 	params := bucket.FormEncode()
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
-	return c.n_post("/pools/default/buckets", params, headers)
+	return c.n_post("/pools/default/buckets", params, nil, headers)
 }
 
 func (c *Couchbase) deleteBucket(name string) error {
@@ -214,7 +214,7 @@ func (c *Couchbase) editBucket(bucket *Bucket) error {
 	params := bucket.FormEncode()
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
-	return c.n_post("/pools/default/buckets/"+bucket.BucketName, params, headers)
+	return c.n_post("/pools/default/buckets/"+bucket.BucketName, params, nil, headers)
 }
 
 func (c *Couchbase) getBucketStatus(name string) (*BucketStatus, error) {
@@ -241,7 +241,7 @@ func (c *Couchbase) insertDoc(bucket *Bucket, docKey string, docData []byte) err
 	docUrl := "/pools/default/buckets/" + bucket.BucketName + "/docs/" + docKey
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, "application/x-www-form-urlencoded")
-	return c.n_post(docUrl, docData, headers)
+	return c.n_post(docUrl, docData, nil, headers)
 }
 
 // Autofailover settings with specified timeouts
@@ -254,7 +254,7 @@ func (c *Couchbase) setAutoFailoverSettings(settings *AutoFailoverSettings) erro
 		return err
 	}
 
-	return c.n_post("/settings/autoFailover", data, headers)
+	return c.n_post("/settings/autoFailover", data, nil, headers)
 }
 
 func (c *Couchbase) getAutoFailoverSettings() (*AutoFailoverSettings, error) {
@@ -272,7 +272,7 @@ func (c *Couchbase) resetCount() error {
 	data := url.Values{}
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
-	return c.n_post("/settings/autoFailover/resetCount", []byte(data.Encode()), headers)
+	return c.n_post("/settings/autoFailover/resetCount", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) getNodeInfo() (*NodeInfo, error) {
@@ -287,7 +287,7 @@ func (c *Couchbase) getNodeInfo() (*NodeInfo, error) {
 
 func (c *Couchbase) uploadClusterCACert(pem []byte) error {
 	headers := c.defaultHeaders()
-	return c.n_post("/controller/uploadClusterCA", pem, headers)
+	return c.n_post("/controller/uploadClusterCA", pem, nil, headers)
 }
 
 func (c *Couchbase) getClusterCACert() ([]byte, error) {
@@ -298,7 +298,7 @@ func (c *Couchbase) getClusterCACert() ([]byte, error) {
 
 func (c *Couchbase) reloadNodeCert() error {
 	headers := c.defaultHeaders()
-	return c.n_post("/node/controller/reloadCertificate", []byte{}, headers)
+	return c.n_post("/node/controller/reloadCertificate", []byte{}, nil, headers)
 }
 
 func (c *Couchbase) getClientCertAuth() (*ClientCertAuth, error) {
@@ -315,7 +315,7 @@ func (c *Couchbase) setClientCertAuth(settings *ClientCertAuth) error {
 		return err
 	}
 	headers := c.defaultHeaders()
-	return c.n_post("/settings/clientCertAuth", data, headers)
+	return c.n_post("/settings/clientCertAuth", data, nil, headers)
 }
 
 func (c *Couchbase) getUpdatesEnabled() (bool, error) {
@@ -331,7 +331,7 @@ func (c *Couchbase) setUpdatesEnabled(enabled bool) error {
 	data.Set("sendStats", BoolAsStr(enabled))
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
-	return c.n_post("/settings/stats", []byte(data.Encode()), headers)
+	return c.n_post("/settings/stats", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) getAlternateAddressesExternal() (*AlternateAddressesExternal, error) {
@@ -388,7 +388,7 @@ func (c *Couchbase) logClientError(msg string) error {
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
-	return c.n_post("/logClientError", []byte(data.Encode()), headers)
+	return c.n_post("/logClientError", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) getServerGroups() (*ServerGroups, error) {
@@ -404,7 +404,7 @@ func (c *Couchbase) createServerGroup(name string) error {
 	data.Set("name", name)
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
-	return c.n_post("/pools/default/serverGroups", []byte(data.Encode()), headers)
+	return c.n_post("/pools/default/serverGroups", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) updateServerGroups(revision string, groups *ServerGroupsUpdate) error {
@@ -426,7 +426,7 @@ func (c *Couchbase) setRecoveryType(otpNode string, recoveryType RecoveryType) e
 	headers := c.defaultHeaders()
 	headers.Set("Content-Type", ContentTypeUrlEncoded)
 
-	return c.n_post("/controller/setRecoveryType", []byte(data.Encode()), headers)
+	return c.n_post("/controller/setRecoveryType", []byte(data.Encode()), nil, headers)
 }
 
 func (c *Couchbase) getAutoCompactionSettings() (*AutoCompactionSettings, error) {
@@ -446,7 +446,7 @@ func (c *Couchbase) setAutoCompactionSettings(r *AutoCompactionSettings) error {
 		return err
 	}
 
-	return c.n_post("/controller/setAutoCompaction", data, headers)
+	return c.n_post("/controller/setAutoCompaction", data, nil, headers)
 }
 
 // listRemoteClusters lists remote clusters for use by XDCR.
@@ -478,7 +478,7 @@ func (c *Couchbase) createRemoteCluster(r *RemoteCluster) error {
 		return err
 	}
 
-	return c.n_post("/pools/default/remoteClusters", data, headers)
+	return c.n_post("/pools/default/remoteClusters", data, nil, headers)
 }
 
 // deleteRemoteCluster deletes an existing XDCR remote cluster.
@@ -592,7 +592,7 @@ func (c *Couchbase) createReplication(r *Replication) error {
 		return err
 	}
 
-	return c.n_post("/controller/createReplication", data, headers)
+	return c.n_post("/controller/createReplication", data, nil, headers)
 }
 
 // deleteReplication deletes an existing XDCR replication between clusters.
@@ -719,5 +719,5 @@ func (c *Couchbase) setLDAPSettings(settings *LDAPSettings) error {
 	}
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
-	return c.n_post("/settings/ldap", params, headers)
+	return c.n_post("/settings/ldap", params, nil, headers)
 }

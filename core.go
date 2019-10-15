@@ -261,7 +261,7 @@ func (c *Couchbase) n_get(path string, result interface{}, headers http.Header) 
 	return BulkError{errs}
 }
 
-func (c *Couchbase) n_post(path string, data []byte, headers http.Header) error {
+func (c *Couchbase) n_post(path string, data []byte, result interface{}, headers http.Header) error {
 	errs := []error{}
 	for _, endpoint := range c.endpoints {
 		log.V(2).Info("http", "request body", string(data))
@@ -270,7 +270,7 @@ func (c *Couchbase) n_post(path string, data []byte, headers http.Header) error 
 			return ClientError{"request creation", err}
 		}
 		req.Header = headers
-		if err := c.doRequest(req, nil); err != nil {
+		if err := c.doRequest(req, result); err != nil {
 			errs = append(errs, err)
 			continue
 		}
