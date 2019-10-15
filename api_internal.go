@@ -721,3 +721,15 @@ func (c *Couchbase) setLDAPSettings(settings *LDAPSettings) error {
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
 	return c.n_post("/settings/ldap", params, nil, headers)
 }
+
+func (c *Couchbase) getLDAPConnectivityStatus() (*LDAPStatus, error) {
+	data := url.Values{}
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeJSON)
+	status := &LDAPStatus{}
+	err := c.n_post("/settings/ldap/connectivity", []byte(data.Encode()), status, headers)
+	if err != nil {
+		return nil, err
+	}
+	return status, nil
+}

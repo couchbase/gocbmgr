@@ -676,3 +676,7 @@ func (c *Couchbase) GetLDAPSettings() (*LDAPSettings, error) {
 func (c *Couchbase) SetLDAPSettings(settings *LDAPSettings) error {
 	return c.setLDAPSettings(settings)
 }
+
+func (c *Couchbase) GetLDAPConnectivityStatus() (*LDAPStatus, error) {
+	return c.getLDAPConnectivityStatus()
+}

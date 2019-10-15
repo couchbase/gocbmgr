@@ -392,6 +392,18 @@ type LDAPUserDNMapping struct {
 	Template string `json:"template"`
 }
 
+type LDAPStatusResult string
+
+const (
+	LDAPStatusResultSuccess LDAPStatusResult = "success"
+	LDAPStatusResultError   LDAPStatusResult = "error"
+)
+
+type LDAPStatus struct {
+	Result LDAPStatusResult `json:result`
+	Reason string           `json:reason`
+}
+
 type UserRole struct {
 	Role       string `json:"role"`
 	BucketName string `json:"bucket_name"`
