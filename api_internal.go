@@ -727,7 +727,7 @@ func (c *Couchbase) getLDAPConnectivityStatus() (*LDAPStatus, error) {
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeJSON)
 	status := &LDAPStatus{}
-	err := c.n_post("/settings/ldap/connectivity", []byte(data.Encode()), status, headers)
+	err := c.n_post("/settings/ldap/validate/connectivity", []byte(data.Encode()), status, headers)
 	if err != nil {
 		return nil, err
 	}
