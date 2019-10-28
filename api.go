@@ -680,3 +680,7 @@ func (c *Couchbase) SetLDAPSettings(settings *LDAPSettings) error {
 func (c *Couchbase) GetLDAPConnectivityStatus() (*LDAPStatus, error) {
 	return c.getLDAPConnectivityStatus()
 }
+
+func (c *Couchbase) CloseIdleConnections() {
+	c.client.CloseIdleConnections()
+}
