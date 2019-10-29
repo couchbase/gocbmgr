@@ -723,12 +723,14 @@ type Replication struct {
 	ReplicationType  string `url:"replicationType"`
 	CompressionType  string `url:"compressionType,omitempty"`
 	FilterExpression string `url:"filterExpression,omitempty"`
+	PauseRequested   bool   `url:"pauseRequested"`
 }
 
 // ReplicationSettings describes an XDCR replication settings as returned by
 //   GET /settings/replications/<remote UUID>/<local bucket>/<remote bucket>
 type ReplicationSettings struct {
-	CompressionType string `url:"compressionType"`
+	CompressionType string `json:"compressionType" url:"compressionType,omitempty"`
+	PauseRequested  bool   `json:"pauseRequested" url:"pauseRequested"`
 }
 
 // FormEncode represents user type in api compatible form

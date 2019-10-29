@@ -576,6 +576,7 @@ func (c *Couchbase) listReplications() ([]Replication, error) {
 			ReplicationType:  "continuous",
 			CompressionType:  settings.CompressionType,
 			FilterExpression: task.FilterExpression,
+			PauseRequested:   settings.PauseRequested,
 		})
 	}
 
@@ -593,6 +594,24 @@ func (c *Couchbase) createReplication(r *Replication) error {
 	}
 
 	return c.n_post("/controller/createReplication", data, nil, headers)
+}
+
+// updateReplication updates the parts of an XDCR replication that can be updated.
+func (c *Couchbase) updateReplication(r *Replication) error {
+	cluster, err := c.getRemoteClusterByName(r.ToCluster)
+	if err != nil {
+		return err
+	}
+
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	data, err := urlencoding.Marshal(r)
+	if err != nil {
+		return err
+	}
+
+	return c.n_post("/settings/replications/"+url.PathEscape(cluster.UUID+"/"+r.FromBucket+"/"+r.ToBucket), data, nil, headers)
 }
 
 // deleteReplication deletes an existing XDCR replication between clusters.

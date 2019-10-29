@@ -633,6 +633,10 @@ func (c *Couchbase) CreateReplication(r *Replication) error {
 	return c.createReplication(r)
 }
 
+func (c *Couchbase) UpdateReplication(r *Replication) error {
+	return c.updateReplication(r)
+}
+
 func (c *Couchbase) DeleteReplication(r *Replication) error {
 	return c.deleteReplication(r)
 }
