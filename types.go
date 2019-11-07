@@ -99,11 +99,11 @@ const (
 )
 
 type ClusterInfo struct {
-	SearchMemoryQuotaMB    uint64     `json:"ftsMemoryQuota"`
-	IndexMemoryQuotaMB     uint64     `json:"indexMemoryQuota"`
-	DataMemoryQuotaMB      uint64     `json:"memoryQuota"`
-	EventingMemoryQuotaMB  uint64     `json:"eventingMemoryQuota"`
-	AnalyticsMemoryQuotaMB uint64     `json:"cbasMemoryQuota"`
+	SearchMemoryQuotaMB    int64      `json:"ftsMemoryQuota"`
+	IndexMemoryQuotaMB     int64      `json:"indexMemoryQuota"`
+	DataMemoryQuotaMB      int64      `json:"memoryQuota"`
+	EventingMemoryQuotaMB  int64      `json:"eventingMemoryQuota"`
+	AnalyticsMemoryQuotaMB int64      `json:"cbasMemoryQuota"`
 	Nodes                  []NodeInfo `json:"nodes"`
 	RebalanceStatus        string     `json:"rebalanceStatus"`
 	ClusterName            string     `json:"clusterName"`
@@ -132,13 +132,13 @@ type IndexSettings struct {
 }
 
 type FailoverOnDiskFailureSettings struct {
-	Enabled    bool   `url:"failoverOnDataDiskIssues[enabled]" json:"enabled"`
-	TimePeriod uint64 `url:"failoverOnDataDiskIssues[timePeriod]" json:"timePeriod"`
+	Enabled    bool  `url:"failoverOnDataDiskIssues[enabled]" json:"enabled"`
+	TimePeriod int64 `url:"failoverOnDataDiskIssues[timePeriod]" json:"timePeriod"`
 }
 
 type AutoFailoverSettings struct {
 	Enabled                  bool                          `url:"enabled" json:"enabled"`
-	Timeout                  uint64                        `url:"timeout" json:"timeout"`
+	Timeout                  int64                         `url:"timeout" json:"timeout"`
 	Count                    uint8                         `json:"count"`
 	FailoverOnDataDiskIssues FailoverOnDiskFailureSettings `url:"" json:"failoverOnDataDiskIssues"`
 	FailoverServerGroup      bool                          `url:"failoverServerGroup" json:"failoverServerGroup"`
@@ -247,11 +247,11 @@ type Task struct {
 // PoolsDefaults is the data that may be posted via the /pools/default API
 type PoolsDefaults struct {
 	ClusterName          string `url:"clusterName,omitempty"`
-	DataMemoryQuota      uint64 `url:"memoryQuota,omitempty"`
-	IndexMemoryQuota     uint64 `url:"indexMemoryQuota,omitempty"`
-	SearchMemoryQuota    uint64 `url:"ftsMemoryQuota,omitempty"`
-	EventingMemoryQuota  uint64 `url:"eventingMemoryQuota,omitempty"`
-	AnalyticsMemoryQuota uint64 `url:"cbasMemoryQuota,omitempty"`
+	DataMemoryQuota      int64  `url:"memoryQuota,omitempty"`
+	IndexMemoryQuota     int64  `url:"indexMemoryQuota,omitempty"`
+	SearchMemoryQuota    int64  `url:"ftsMemoryQuota,omitempty"`
+	EventingMemoryQuota  int64  `url:"eventingMemoryQuota,omitempty"`
+	AnalyticsMemoryQuota int64  `url:"cbasMemoryQuota,omitempty"`
 }
 
 type IoPriorityType string
@@ -275,7 +275,7 @@ const (
 type Bucket struct {
 	BucketName         string          `json:"name"`
 	BucketType         string          `json:"type"`
-	BucketMemoryQuota  int             `json:"memoryQuota"`
+	BucketMemoryQuota  int64           `json:"memoryQuota"`
 	BucketReplicas     int             `json:"replicas"`
 	IoPriority         IoPriorityType  `json:"ioPriority"`
 	EvictionPolicy     string          `json:"evictionPolicy"`
@@ -307,7 +307,7 @@ type BucketStatus struct {
 	ReplicaNumber          int                   `json:"replicaNumber"`
 	ThreadsNumber          IoPriorityThreadCount `json:"threadsNumber"`
 	Controllers            map[string]string     `json:"controllers"`
-	Quota                  map[string]int        `json:"quota"`
+	Quota                  map[string]int64      `json:"quota"`
 	Stats                  map[string]string     `json:"stats"`
 	VBServerMap            VBucketServerMap      `json:"vBucketServerMap"`
 	CompressionMode        CompressionMode       `json:"compressionMode"`
@@ -514,7 +514,7 @@ func (b *Bucket) FormEncode() []byte {
 	data := url.Values{}
 	data.Set("name", b.BucketName)
 	data.Set("bucketType", b.BucketType)
-	data.Set("ramQuotaMB", strconv.Itoa(b.BucketMemoryQuota))
+	data.Set("ramQuotaMB", strconv.Itoa(int(b.BucketMemoryQuota)))
 	if b.BucketType != "memcached" {
 		data.Set("replicaNumber", strconv.Itoa(b.BucketReplicas))
 	}
