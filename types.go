@@ -325,7 +325,7 @@ type AuthDomain string
 
 const (
 	InternalAuthDomain AuthDomain = "local"
-	LDAPAuthDomain                = "ldap"
+	LDAPAuthDomain     AuthDomain = "ldap"
 )
 
 type User struct {
