@@ -354,9 +354,9 @@ const (
 
 type LDAPSettings struct {
 	// Enables using LDAP to authenticate users.
-	AuthenticationEnabled bool `json:"authentication_enabled"`
+	AuthenticationEnabled bool `json:"authenticationEnabled"`
 	// Enables use of LDAP groups for authorization.
-	AuthorizationEnabled bool `json:"authorization_enabled"`
+	AuthorizationEnabled bool `json:"authorizationEnabled"`
 	// List of LDAP hosts.
 	Hosts []string `json:"hosts"`
 	// LDAP port
@@ -365,26 +365,26 @@ type LDAPSettings struct {
 	// Can be StartTLSExtension, TLS, or false.
 	Encryption LDAPEncryption `json:"encryption",omitempty`
 	// Whether server certificate validation be enabled
-	EnableCertValidation bool `json:"server_cert_validation"`
+	EnableCertValidation bool `json:"serverCertValidation"`
 	// Certificate in PEM format to be used in LDAP server certificate validation
 	CACert string `json:"cacert"`
 	// LDAP query, to get the users' groups by username in RFC4516 format.
-	GroupsQuery string `json:"groups_query",omitempty`
+	GroupsQuery string `json:"groupsQuery",omitempty`
 	// DN to use for searching users and groups synchronization.
-	QueryDN string `json:"query_dn",omitempty`
+	BindDN string `json:"bindDN",omitempty`
 	// Password for query_dn user.
-	QueryPass string `json:"query_pass",omitempty`
+	BindPass string `json:"bindPass",omitempty`
 	// User to distinguished name (DN) mapping. If none is specified,
 	// the username is used as the user’s distinguished name.
-	UserDNMapping *[]LDAPUserDNMapping `json:"user_dn_mapping",omitempty`
+	UserDNMapping *[]LDAPUserDNMapping `json:"userDNMapping",omitempty`
 	// If enabled Couchbase server will try to recursively search for groups
-	// for every discovered ldap group. groups_query will be user for the search.
-	NestedGroupsEnabled bool `json:"nested_groups_enabled",omitempty`
+	// for every discovered ldap group. groupsQuery will be user for the search.
+	NestedGroupsEnabled bool `json:"nestedGroupsEnabled",omitempty`
 	// Maximum number of recursive groups requests the server is allowed to perform.
 	// Requires NestedGroupsEnabled.  Values between 1 and 100: the default is 10.
-	NestedGroupsMaxDepth uint64 `json:"nested_groups_max_depth",omitempty`
+	NestedGroupsMaxDepth uint64 `json:"nestedGroupsMaxDepth",omitempty`
 	// Lifetime of values in cache in milliseconds. Default 300000 ms.
-	CacheValueLifetime uint64 `json:"cache_value_lifetime",omitempty`
+	CacheValueLifetime uint64 `json:"cacheValueLifetime",omitempty`
 }
 
 type LDAPUserDNMapping struct {
@@ -797,12 +797,12 @@ func (s *LDAPSettings) FormEncode() ([]byte, error) {
 	data := url.Values{}
 	data.Set("hosts", strings.Join(s.Hosts, ","))
 	data.Set("port", strconv.Itoa(s.Port))
-	data.Set("query_dn", s.QueryDN)
-	data.Set("query_pass", s.QueryPass)
-	data.Set("authentication_enabled", strconv.FormatBool(s.AuthenticationEnabled))
-	data.Set("authorization_enabled", strconv.FormatBool(s.AuthorizationEnabled))
+	data.Set("bindDN", s.BindDN)
+	data.Set("bindPass", s.BindPass)
+	data.Set("authenticationEnabled", strconv.FormatBool(s.AuthenticationEnabled))
+	data.Set("authorizationEnabled", strconv.FormatBool(s.AuthorizationEnabled))
 	data.Set("encryption", string(s.Encryption))
-	data.Set("server_cert_validation", strconv.FormatBool(s.EnableCertValidation))
+	data.Set("serverCertValidation", strconv.FormatBool(s.EnableCertValidation))
 	if s.EnableCertValidation {
 		data.Set("cacert", string(s.CACert))
 	}
@@ -812,20 +812,20 @@ func (s *LDAPSettings) FormEncode() ([]byte, error) {
 		if err != nil {
 			return []byte{}, err
 		}
-		data.Set("user_dn_mapping", string(dnData))
+		data.Set("userDNMapping", string(dnData))
 	}
 
 	if s.AuthorizationEnabled {
-		data.Set("groups_query", s.GroupsQuery)
+		data.Set("groupsQuery", s.GroupsQuery)
 	}
 
 	if s.NestedGroupsEnabled {
-		data.Set("nested_groups_enabled", BoolToStr(s.NestedGroupsEnabled))
-		data.Set("nested_groups_max_depth", strconv.FormatUint(s.NestedGroupsMaxDepth, 10))
+		data.Set("nestedGroupsEnabled", BoolToStr(s.NestedGroupsEnabled))
+		data.Set("nestedGroupsMaxDepth", strconv.FormatUint(s.NestedGroupsMaxDepth, 10))
 	}
 
 	if s.CacheValueLifetime > 0 {
-		data.Set("cache_value_lifetime", strconv.FormatUint(s.CacheValueLifetime, 10))
+		data.Set("cacheValueLifetime", strconv.FormatUint(s.CacheValueLifetime, 10))
 	}
 	return []byte(data.Encode()), nil
 }
