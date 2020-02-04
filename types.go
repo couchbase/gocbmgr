@@ -341,7 +341,7 @@ type Group struct {
 	ID           string     `json:"id"`
 	Roles        []UserRole `json:"roles"`
 	Description  string     `json:"description"`
-	LDAPGroupRef string     `json:"ldap_group_ref"`
+	LDAPGroupRef string     `json:"ldapGroupRef"`
 }
 
 type LDAPEncryption string
@@ -363,28 +363,28 @@ type LDAPSettings struct {
 	Port int `json:"port"`
 	// Encryption method to communicate with LDAP servers.
 	// Can be StartTLSExtension, TLS, or false.
-	Encryption LDAPEncryption `json:"encryption",omitempty`
+	Encryption LDAPEncryption `json:"encryption,omitempty"`
 	// Whether server certificate validation be enabled
 	EnableCertValidation bool `json:"serverCertValidation"`
 	// Certificate in PEM format to be used in LDAP server certificate validation
 	CACert string `json:"cacert"`
 	// LDAP query, to get the users' groups by username in RFC4516 format.
-	GroupsQuery string `json:"groupsQuery",omitempty`
+	GroupsQuery string `json:"groupsQuery,omitempty"`
 	// DN to use for searching users and groups synchronization.
-	BindDN string `json:"bindDN",omitempty`
+	BindDN string `json:"bindDN,omitempty"`
 	// Password for query_dn user.
-	BindPass string `json:"bindPass",omitempty`
+	BindPass string `json:"bindPass,omitempty"`
 	// User to distinguished name (DN) mapping. If none is specified,
 	// the username is used as the user’s distinguished name.
-	UserDNMapping *[]LDAPUserDNMapping `json:"userDNMapping",omitempty`
+	UserDNMapping *[]LDAPUserDNMapping `json:"userDNMapping,omitempty"`
 	// If enabled Couchbase server will try to recursively search for groups
 	// for every discovered ldap group. groupsQuery will be user for the search.
-	NestedGroupsEnabled bool `json:"nestedGroupsEnabled",omitempty`
+	NestedGroupsEnabled bool `json:"nestedGroupsEnabled,omitempty"`
 	// Maximum number of recursive groups requests the server is allowed to perform.
 	// Requires NestedGroupsEnabled.  Values between 1 and 100: the default is 10.
-	NestedGroupsMaxDepth uint64 `json:"nestedGroupsMaxDepth",omitempty`
+	NestedGroupsMaxDepth uint64 `json:"nestedGroupsMaxDepth,omitempty"`
 	// Lifetime of values in cache in milliseconds. Default 300000 ms.
-	CacheValueLifetime uint64 `json:"cacheValueLifetime",omitempty`
+	CacheValueLifetime uint64 `json:"cacheValueLifetime,omitempty"`
 }
 
 type LDAPUserDNMapping struct {
@@ -760,9 +760,8 @@ func RolesToStr(userRoles []UserRole) []string {
 	return roles
 }
 
-// BUG: MB-35567
 // Normal unmarshlling doesn't work because
-// LDAP encryption should use 'None' instead of false
+// LDAP DN Mapping returns a string when unset
 func (s *LDAPSettings) UnmarshalJSON(data []byte) error {
 
 	var jsonData map[string]interface{}
@@ -771,19 +770,19 @@ func (s *LDAPSettings) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	type LDAPSettingsAlias LDAPSettings
-	settings := LDAPSettingsAlias{}
-
-	// convert encryption to string if specified as a bool
-	if value, ok := jsonData["encryption"]; ok {
-		if _, ok := value.(bool); ok {
-			jsonData["encryption"] = LDAPEncryptionNone
+	// Remove dnMapping if it cannot be properly cast
+	if dnMap, ok := jsonData["userDNMapping"]; ok {
+		if _, ok := dnMap.(*[]LDAPUserDNMapping); !ok {
+			delete(jsonData, "userDNMapping")
 			data, err = json.Marshal(jsonData)
 			if err != nil {
 				return err
 			}
 		}
 	}
+
+	type LDAPSettingsAlias LDAPSettings
+	settings := LDAPSettingsAlias{}
 
 	if err := json.Unmarshal(data, &settings); err != nil {
 		return err
@@ -828,23 +827,4 @@ func (s *LDAPSettings) FormEncode() ([]byte, error) {
 		data.Set("cacheValueLifetime", strconv.FormatUint(s.CacheValueLifetime, 10))
 	}
 	return []byte(data.Encode()), nil
-}
-
-func (in *LDAPSettings) DeepCopyInto(out *LDAPSettings) {
-	*out = *in
-	if in.UserDNMapping != nil {
-		in, out := &in.UserDNMapping, &out.UserDNMapping
-		*out = new([]LDAPUserDNMapping)
-		*out = *in
-	}
-	return
-}
-
-func (in *LDAPSettings) DeepCopy() *LDAPSettings {
-	if in == nil {
-		return nil
-	}
-	out := new(LDAPSettings)
-	in.DeepCopyInto(out)
-	return out
 }
