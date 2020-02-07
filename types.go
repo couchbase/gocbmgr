@@ -341,7 +341,7 @@ type Group struct {
 	ID           string     `json:"id"`
 	Roles        []UserRole `json:"roles"`
 	Description  string     `json:"description"`
-	LDAPGroupRef string     `json:"ldapGroupRef"`
+	LDAPGroupRef string     `json:"ldap_group_ref"`
 }
 
 type LDAPEncryption string

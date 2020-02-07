@@ -691,7 +691,7 @@ func (c *Couchbase) createGroup(group *Group) error {
 	roles := RolesToStr(group.Roles)
 	data.Set("roles", strings.Join(roles, ","))
 	data.Set("description", group.Description)
-	data.Set("ldapGroupRef", group.LDAPGroupRef)
+	data.Set("ldap_group_ref", group.LDAPGroupRef)
 
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
