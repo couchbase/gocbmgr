@@ -335,6 +335,7 @@ type User struct {
 	Domain   AuthDomain `json:"domain"`
 	ID       string     `json:"id"`
 	Roles    []UserRole `json:"roles"`
+	Groups   []string   `json:"groups"`
 }
 
 type Group struct {
@@ -742,6 +743,7 @@ func (u *User) FormEncode() []byte {
 
 	roles := RolesToStr(u.Roles)
 	data.Set("roles", strings.Join(roles, ","))
+	data.Set("groups", strings.Join(u.Groups, ","))
 	return []byte(data.Encode())
 }
 
