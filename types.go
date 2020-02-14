@@ -330,7 +330,6 @@ const (
 
 type User struct {
 	Name     string     `json:"name"`
-	FullName string     `json:"fullName"`
 	Password string     `json:"password"`
 	Domain   AuthDomain `json:"domain"`
 	ID       string     `json:"id"`
@@ -742,6 +741,7 @@ func (u *User) FormEncode() []byte {
 	}
 
 	roles := RolesToStr(u.Roles)
+	data.Set("name", u.Name)
 	data.Set("roles", strings.Join(roles, ","))
 	data.Set("groups", strings.Join(u.Groups, ","))
 	return []byte(data.Encode())
