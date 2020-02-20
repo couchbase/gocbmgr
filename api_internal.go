@@ -640,35 +640,25 @@ func (c *Couchbase) createUser(user *User) error {
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
 
-	path := "/settings/rbac/users/"
-	if user.Domain == InternalAuthDomain {
-		path = path + string(InternalAuthDomain)
-	}
-	return c.n_put(path+"/"+user.ID, params, headers)
+	path := strings.Join([]string{"/settings/rbac/users", string(user.Domain), user.ID}, "/")
+	return c.n_put(path, params, headers)
 }
 
 func (c *Couchbase) deleteUser(user *User) error {
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
 
-	path := "/settings/rbac/users/"
-	if user.Domain == InternalAuthDomain {
-		path = path + string(InternalAuthDomain)
-	}
-	return c.n_delete(path+"/"+user.ID, headers)
+	path := strings.Join([]string{"/settings/rbac/users", string(user.Domain), user.ID}, "/")
+	return c.n_delete(path, headers)
 }
 
 func (c *Couchbase) getUser(id string, domain AuthDomain) (*User, error) {
 	headers := c.defaultHeaders()
 	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
 
-	path := "/settings/rbac/users/"
-	if domain == InternalAuthDomain {
-		path = path + string(InternalAuthDomain)
-	}
-
 	user := &User{}
-	err := c.n_get(path+"/"+id, user, c.defaultHeaders())
+	path := strings.Join([]string{"/settings/rbac/users", string(domain), id}, "/")
+	err := c.n_get(path, user, c.defaultHeaders())
 	if err != nil {
 		return nil, err
 	}
