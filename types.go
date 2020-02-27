@@ -376,7 +376,7 @@ type LDAPSettings struct {
 	BindPass string `json:"bindPass,omitempty"`
 	// User to distinguished name (DN) mapping. If none is specified,
 	// the username is used as the user’s distinguished name.
-	UserDNMapping *[]LDAPUserDNMapping `json:"userDNMapping,omitempty"`
+	UserDNMapping LDAPUserDNMapping `json:"userDNMapping,omitempty"`
 	// If enabled Couchbase server will try to recursively search for groups
 	// for every discovered ldap group. groupsQuery will be user for the search.
 	NestedGroupsEnabled bool `json:"nestedGroupsEnabled,omitempty"`
@@ -388,7 +388,6 @@ type LDAPSettings struct {
 }
 
 type LDAPUserDNMapping struct {
-	Regex    string `json:"re"`
 	Template string `json:"template"`
 }
 
@@ -774,7 +773,7 @@ func (s *LDAPSettings) UnmarshalJSON(data []byte) error {
 
 	// Remove dnMapping if it cannot be properly cast
 	if dnMap, ok := jsonData["userDNMapping"]; ok {
-		if _, ok := dnMap.(*[]LDAPUserDNMapping); !ok {
+		if _, ok := dnMap.(LDAPUserDNMapping); !ok {
 			delete(jsonData, "userDNMapping")
 			data, err = json.Marshal(jsonData)
 			if err != nil {
@@ -782,7 +781,6 @@ func (s *LDAPSettings) UnmarshalJSON(data []byte) error {
 			}
 		}
 	}
-
 	type LDAPSettingsAlias LDAPSettings
 	settings := LDAPSettingsAlias{}
 
@@ -808,8 +806,8 @@ func (s *LDAPSettings) FormEncode() ([]byte, error) {
 		data.Set("cacert", string(s.CACert))
 	}
 
-	if s.AuthorizationEnabled && (s.UserDNMapping != nil) {
-		dnData, err := json.Marshal(*s.UserDNMapping)
+	if s.AuthenticationEnabled {
+		dnData, err := json.Marshal(s.UserDNMapping)
 		if err != nil {
 			return []byte{}, err
 		}
