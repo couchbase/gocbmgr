@@ -347,7 +347,7 @@ type Group struct {
 type LDAPEncryption string
 
 const (
-	LDAPEncryptionNone     LDAPEncryption = "false"
+	LDAPEncryptionNone     LDAPEncryption = "None"
 	LDAPEncryptionStartTLS                = "StartTLSExtension"
 	LDAPEncryptionTLS                     = "TLS"
 )
