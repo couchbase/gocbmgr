@@ -21,6 +21,8 @@ func isEmptyValue(v reflect.Value) bool {
 		return v.Float() == 0.0
 	case reflect.Bool:
 		return !v.Bool()
+	case reflect.Slice:
+		return v.Len() == 0
 	}
 	return false
 }
@@ -38,8 +40,21 @@ func encode(v reflect.Value) (string, error) {
 		return strconv.FormatFloat(v.Float(), 'f', -1, 64), nil
 	case reflect.Bool:
 		return strconv.FormatBool(v.Bool()), nil
+	case reflect.Slice:
+		items := make([]string, v.Len())
+
+		for i := 0; i < v.Len(); i++ {
+			item, err := encode(v.Index(i))
+			if err != nil {
+				return "", err
+			}
+
+			items[i] = item
+		}
+
+		return "[" + strings.Join(items, ",") + "]", nil
 	}
-	return "", fmt.Errorf("unsupported type %s", v.Type().Name())
+	return "", fmt.Errorf("unsupported type %v %v", v, v.Type())
 }
 
 // options is an array of options

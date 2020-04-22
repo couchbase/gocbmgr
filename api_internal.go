@@ -153,6 +153,71 @@ func (c *Couchbase) getIndexSettings() (*IndexSettings, error) {
 	return settings, nil
 }
 
+func (c *Couchbase) GetSecuritySettings() (*SecuritySettings, error) {
+	s := &SecuritySettings{}
+
+	if err := c.n_get("/settings/security", s, c.defaultHeaders()); err != nil {
+		return nil, err
+	}
+
+	return s, nil
+}
+
+func (c *Couchbase) SetSecuritySettings(s *SecuritySettings) error {
+	data, err := urlencoding.Marshal(s)
+	if err != nil {
+		return err
+	}
+
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	return c.n_post("/settings/security", data, nil, headers)
+}
+
+func (c *Couchbase) GetNodeNetworkConfiguration() (*NodeNetworkConfiguration, error) {
+	// And yet again, the CRUD is completely ignored!
+	node, err := c.getNodeInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	onOrOff := Off
+	if node.NodeEncryption {
+		onOrOff = On
+	}
+
+	s := &NodeNetworkConfiguration{
+		NodeEncryption: onOrOff,
+	}
+
+	return s, nil
+}
+
+func (c *Couchbase) SetNodeNetworkConfiguration(s *NodeNetworkConfiguration) error {
+	data, err := urlencoding.Marshal(s)
+	if err != nil {
+		return err
+	}
+
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	return c.n_post("/node/controller/setupNetConfig", data, nil, headers)
+}
+
+func (c *Couchbase) EnableExternalListener(s *NodeNetworkConfiguration) error {
+	data, err := urlencoding.Marshal(s)
+	if err != nil {
+		return err
+	}
+
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	return c.n_post("/node/controller/enableExternalListener", data, nil, headers)
+}
+
 func (c *Couchbase) setIndexSettings(mode IndexStorageMode, threads, memSnapInterval,
 	stableSnapInterval, maxRollbackPoints int, logLevel IndexLogLevel) error {
 	data := url.Values{}

@@ -211,6 +211,7 @@ type NodeInfo struct {
 	Services           []string             `json:"services"`
 	AvailableStorage   AvailableStorageInfo `json:"storage"`
 	AlternateAddresses *AlternateAddresses  `json:"alternateAddresses,omitempty"`
+	NodeEncryption     bool                 `json:"nodeEncryption"`
 }
 
 type AvailableStorageInfo map[AvailableStorageType][]StorageInfo
@@ -827,4 +828,81 @@ func (s *LDAPSettings) FormEncode() ([]byte, error) {
 		data.Set("cacheValueLifetime", strconv.FormatUint(s.CacheValueLifetime, 10))
 	}
 	return []byte(data.Encode()), nil
+}
+
+// TLSVersion is a TLS version, as understood by the security API.
+type TLSVersion string
+
+const (
+	// Insecure, do not use.
+	TLS10 TLSVersion = "tls1"
+
+	// Insecure, do not use.
+	TLS11 TLSVersion = "tls1.1"
+
+	// Obsolete, use 1.3... which isn't supported :D
+	TLS12 TLSVersion = "tls1.2"
+)
+
+// ClusterEncryptionLevel is used to fully encrypt everything.
+type ClusterEncryptionLevel string
+
+const (
+	// Encrypt all traffic.
+	ClusterEncryptionAll ClusterEncryptionLevel = "all"
+
+	// Encrypt only the control plane, allowing all your data to be evesdropped.
+	// The implication here is performance sucks, so use with caution!
+	ClusterEncryptionControl ClusterEncryptionLevel = "control"
+)
+
+// Security settings for the cluster.
+type SecuritySettings struct {
+	// Disallow access to web APIs over 8091.
+	DisableUIOverHTTP bool `json:"disableUIOverHttp" url:"disableUIOverHttp,omitempty"`
+
+	// Disallow access to web APIs over 18091.
+	DisableUIOverHTTPS bool `json:"disableUIOverHttps" url:"disableUIOverHttps,omitempty"`
+
+	// Set the minimum TLS version, should always be 1.2.
+	TLSMinVersion TLSVersion `json:"tlsMinVersion" url:"tlsMinVersion,omitempty"`
+
+	// Cipher suites is a list of OpenSSL suites (openssl ciphers -v)
+	CipherSuites []string `json:"cipherSuites" url:"cipherSuites"`
+
+	// Choose the first suite that the client accepts.  This goes against
+	// standard security practice in that you should always use the most
+	// secure.  When in the hands of users this isn't the case...
+	HonorCipherOrder bool `json:"honorCipherOrder" url:"honorCipherOrder,omitempty"`
+
+	// Enable cluster level encryption.
+	ClusterEncryptionLevel ClusterEncryptionLevel `json:"clusterEncryptionLevel" url:"clusterEncryptionLevel,omitempty"`
+}
+
+// I'm not even going to comment on this...
+type OnOrOff string
+
+const (
+	On OnOrOff = "on"
+
+	Off OnOrOff = "off"
+)
+
+// AddressFamily The address family to apply the settings.
+type AddressFamily string
+
+const (
+	AddressFamilyIPV4 AddressFamily = "ipv4"
+
+	AddressFamilyIPV6 AddressFamily = "ipv6"
+)
+
+// NodeNetworkConfiguration allows configuration of node networking for a specific address family.
+// I can only guess this default to IPv4, which is fine.
+type NodeNetworkConfiguration struct {
+	// AddressFamily is the family of addresses to affect (IPv4 or IPv6 presumably).
+	AddressFamily AddressFamily `json:"afamiliy" url:"afamily,omitempty"`
+
+	// NodeEncryption is whether encyryption is enabled for a node.
+	NodeEncryption OnOrOff `json:"nodeEncryption" url:"nodeEncryption"`
 }
