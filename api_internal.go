@@ -218,6 +218,18 @@ func (c *Couchbase) EnableExternalListener(s *NodeNetworkConfiguration) error {
 	return c.n_post("/node/controller/enableExternalListener", data, nil, headers)
 }
 
+func (c *Couchbase) DisableExternalListener(s *NodeNetworkConfiguration) error {
+	data, err := urlencoding.Marshal(s)
+	if err != nil {
+		return err
+	}
+
+	headers := c.defaultHeaders()
+	headers.Set(HeaderContentType, ContentTypeUrlEncoded)
+
+	return c.n_post("/node/controller/disableExternalListener", data, nil, headers)
+}
+
 func (c *Couchbase) setIndexSettings(mode IndexStorageMode, threads, memSnapInterval,
 	stableSnapInterval, maxRollbackPoints int, logLevel IndexLogLevel) error {
 	data := url.Values{}
