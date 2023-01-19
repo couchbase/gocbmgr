@@ -222,8 +222,9 @@ type StorageInfo struct {
 }
 
 type PoolsInfo struct {
-	Enterprise bool        `json:"isEnterprise"`
-	UUID       interface{} `json:"uuid"`
+	Enterprise  bool        `json:"isEnterprise"`
+	UUID        interface{} `json:"uuid"`
+	ImplVersion string      `json:"implementationVersion"`
 }
 
 // Task is a base object to describe the very unfriendly polymorphic
@@ -693,7 +694,8 @@ type AutoCompactionSettings struct {
 }
 
 // RemoteClusters is returned by
-//   GET /pools/default/remoteClusters
+//
+//	GET /pools/default/remoteClusters
 type RemoteClusters []RemoteCluster
 
 // RemoteCluster describes an XDCR remote cluster.
@@ -714,7 +716,8 @@ type RemoteCluster struct {
 }
 
 // Replication describes an XDCR replication as set with
-//   POST /controller/createReplication
+//
+//	POST /controller/createReplication
 type Replication struct {
 	FromBucket       string `url:"fromBucket"`
 	ToCluster        string `url:"toCluster"`
@@ -727,7 +730,8 @@ type Replication struct {
 }
 
 // ReplicationSettings describes an XDCR replication settings as returned by
-//   GET /settings/replications/<remote UUID>/<local bucket>/<remote bucket>
+//
+//	GET /settings/replications/<remote UUID>/<local bucket>/<remote bucket>
 type ReplicationSettings struct {
 	CompressionType string `json:"compressionType" url:"compressionType,omitempty"`
 	PauseRequested  bool   `json:"pauseRequested" url:"pauseRequested"`

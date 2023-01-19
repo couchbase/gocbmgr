@@ -367,9 +367,67 @@ func (c *Couchbase) uploadClusterCACert(pem []byte) error {
 	return c.n_post("/controller/uploadClusterCA", pem, nil, headers)
 }
 
+func (c *Couchbase) getClusterVersion() (v string, err error) {
+	info, err := c.getPools()
+	if err != nil {
+		return
+	}
+	arr := strings.Split(info.ImplVersion, "-")
+	v = arr[0]
+	return
+}
+
+func splitVersionString(v string) (major, minor, patch int, err error) {
+	arr := strings.Split(v, ".")
+	if len(arr) < 3 {
+		err = fmt.Errorf("version string = %s is invalid", v)
+		return
+	}
+	major, err = strconv.Atoi(arr[0])
+	if err != nil {
+		return
+	}
+	minor, err = strconv.Atoi(arr[1])
+	if err != nil {
+		return
+	}
+	patch, err = strconv.Atoi(arr[2])
+	return
+}
+
+func (c *Couchbase) getClusterCert71() (cert []byte, err error) {
+	type Cert struct {
+		PEM string `json:"pem"`
+	}
+	certs := []Cert{}
+
+	err = c.n_get("/pools/default/trustedCAs", &certs, c.defaultHeaders())
+	cert = []byte(certs[0].PEM)
+
+	return
+}
+
 func (c *Couchbase) getClusterCACert() ([]byte, error) {
+	v, err := c.getClusterVersion()
+	if err != nil {
+		return nil, err
+	}
+
+	major, minor, _, err := splitVersionString(v)
+	if err != nil {
+		return nil, err
+	}
+
+	if major >= 7 && minor >= 1 {
+		cert, err := c.getClusterCert71()
+		if err != nil {
+			return nil, err
+		}
+		return cert, nil
+	}
+
 	var cert string
-	err := c.n_get("/pools/default/certificate", &cert, c.defaultHeaders())
+	err = c.n_get("/pools/default/certificate", &cert, c.defaultHeaders())
 	return []byte(cert), err
 }
 
