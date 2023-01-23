@@ -201,17 +201,18 @@ type NodeServices struct {
 }
 
 type NodeInfo struct {
-	ThisNode           bool                 `json:"thisNode"`
-	Uptime             string               `json:"uptime"`
-	Membership         string               `json:"clusterMembership"`
-	RecoveryType       string               `json:"recoveryType"`
-	Status             string               `json:"status"`
-	OTPNode            string               `json:"otpNode"`
-	HostName           string               `json:"hostname"`
-	Services           []string             `json:"services"`
-	AvailableStorage   AvailableStorageInfo `json:"storage"`
-	AlternateAddresses *AlternateAddresses  `json:"alternateAddresses,omitempty"`
-	NodeEncryption     bool                 `json:"nodeEncryption"`
+	ThisNode             bool                 `json:"thisNode"`
+	Uptime               string               `json:"uptime"`
+	Membership           string               `json:"clusterMembership"`
+	RecoveryType         string               `json:"recoveryType"`
+	Status               string               `json:"status"`
+	OTPNode              string               `json:"otpNode"`
+	HostName             string               `json:"hostname"`
+	Services             []string             `json:"services"`
+	AvailableStorage     AvailableStorageInfo `json:"storage"`
+	AlternateAddresses   *AlternateAddresses  `json:"alternateAddresses,omitempty"`
+	NodeEncryption       bool                 `json:"nodeEncryption"`
+	ClusterCompatibility int                  `json:"clusterCompatibility"`
 }
 
 type AvailableStorageInfo map[AvailableStorageType][]StorageInfo
@@ -222,9 +223,8 @@ type StorageInfo struct {
 }
 
 type PoolsInfo struct {
-	Enterprise  bool        `json:"isEnterprise"`
-	UUID        interface{} `json:"uuid"`
-	ImplVersion string      `json:"implementationVersion"`
+	Enterprise bool        `json:"isEnterprise"`
+	UUID       interface{} `json:"uuid"`
 }
 
 // Task is a base object to describe the very unfriendly polymorphic

@@ -10,6 +10,8 @@ import (
 	"github.com/couchbase/gocbmgr/urlencoding"
 )
 
+const version71Compatibility = 458753
+
 func (c *Couchbase) addNode(hostname, username, password string, services ServiceList) error {
 	data := url.Values{}
 	data.Set("hostname", hostname)
@@ -367,31 +369,16 @@ func (c *Couchbase) uploadClusterCACert(pem []byte) error {
 	return c.n_post("/controller/uploadClusterCA", pem, nil, headers)
 }
 
-func (c *Couchbase) getClusterVersion() (v string, err error) {
-	info, err := c.getPools()
+func (c *Couchbase) getClusterCompatibility() (compat int, err error) {
+	info, err := c.getPoolsDefault()
 	if err != nil {
 		return
 	}
-	arr := strings.Split(info.ImplVersion, "-")
-	v = arr[0]
-	return
-}
-
-func splitVersionString(v string) (major, minor, patch int, err error) {
-	arr := strings.Split(v, ".")
-	if len(arr) < 3 {
-		err = fmt.Errorf("version string = %s is invalid", v)
+	if len(info.Nodes) == 0 {
+		err = fmt.Errorf("no nodes found to get cluster compatibility")
 		return
 	}
-	major, err = strconv.Atoi(arr[0])
-	if err != nil {
-		return
-	}
-	minor, err = strconv.Atoi(arr[1])
-	if err != nil {
-		return
-	}
-	patch, err = strconv.Atoi(arr[2])
+	compat = info.Nodes[0].ClusterCompatibility
 	return
 }
 
@@ -408,17 +395,12 @@ func (c *Couchbase) getClusterCert71() (cert []byte, err error) {
 }
 
 func (c *Couchbase) getClusterCACert() ([]byte, error) {
-	v, err := c.getClusterVersion()
+	compat, err := c.getClusterCompatibility()
 	if err != nil {
 		return nil, err
 	}
 
-	major, minor, _, err := splitVersionString(v)
-	if err != nil {
-		return nil, err
-	}
-
-	if major >= 7 && minor >= 1 {
+	if compat >= version71Compatibility {
 		cert, err := c.getClusterCert71()
 		if err != nil {
 			return nil, err
