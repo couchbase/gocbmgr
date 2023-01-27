@@ -81,6 +81,10 @@ type Couchbase struct {
 	userAgent *UserAgent
 }
 
+type TrustedCA struct {
+	PEM string `json:"pem"`
+}
+
 // New creates a new Couchbase HTTP(S) API client and initializes the
 // HTTP connection pool.
 func New(username, password string) *Couchbase {
@@ -530,8 +534,20 @@ func (c *Couchbase) ReloadNodeCert() error {
 	return c.reloadNodeCert()
 }
 
+// GetClusterCACert returns CA certificate from couchbase cluster.
+// Since cluster version >= 7.1 there could be multiple CA certificates.
+// In such cases, it will return the last certificate. If all certificates
+// are needed then use the api GetClusterCACertAll
 func (c *Couchbase) GetClusterCACert() ([]byte, error) {
 	return c.getClusterCACert()
+}
+
+// GetClusterCACertAll returns CA certificates from couchbase cluster.
+// For cluster version < v7.1 a single certificate is returned and for
+// version >= v7.1 all CA certificates are returned. If there are no
+// certificates are found then it will return an error.
+func (c *Couchbase) GetClusterCACertAll() ([]TrustedCA, error) {
+	return c.getClusterCACertAll()
 }
 
 func (c *Couchbase) GetClientCertAuth() (*ClientCertAuth, error) {

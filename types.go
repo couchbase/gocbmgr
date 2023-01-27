@@ -201,17 +201,18 @@ type NodeServices struct {
 }
 
 type NodeInfo struct {
-	ThisNode           bool                 `json:"thisNode"`
-	Uptime             string               `json:"uptime"`
-	Membership         string               `json:"clusterMembership"`
-	RecoveryType       string               `json:"recoveryType"`
-	Status             string               `json:"status"`
-	OTPNode            string               `json:"otpNode"`
-	HostName           string               `json:"hostname"`
-	Services           []string             `json:"services"`
-	AvailableStorage   AvailableStorageInfo `json:"storage"`
-	AlternateAddresses *AlternateAddresses  `json:"alternateAddresses,omitempty"`
-	NodeEncryption     bool                 `json:"nodeEncryption"`
+	ThisNode             bool                 `json:"thisNode"`
+	Uptime               string               `json:"uptime"`
+	Membership           string               `json:"clusterMembership"`
+	RecoveryType         string               `json:"recoveryType"`
+	Status               string               `json:"status"`
+	OTPNode              string               `json:"otpNode"`
+	HostName             string               `json:"hostname"`
+	Services             []string             `json:"services"`
+	AvailableStorage     AvailableStorageInfo `json:"storage"`
+	AlternateAddresses   *AlternateAddresses  `json:"alternateAddresses,omitempty"`
+	NodeEncryption       bool                 `json:"nodeEncryption"`
+	ClusterCompatibility int                  `json:"clusterCompatibility"`
 }
 
 type AvailableStorageInfo map[AvailableStorageType][]StorageInfo
@@ -693,7 +694,8 @@ type AutoCompactionSettings struct {
 }
 
 // RemoteClusters is returned by
-//   GET /pools/default/remoteClusters
+//
+//	GET /pools/default/remoteClusters
 type RemoteClusters []RemoteCluster
 
 // RemoteCluster describes an XDCR remote cluster.
@@ -714,7 +716,8 @@ type RemoteCluster struct {
 }
 
 // Replication describes an XDCR replication as set with
-//   POST /controller/createReplication
+//
+//	POST /controller/createReplication
 type Replication struct {
 	FromBucket       string `url:"fromBucket"`
 	ToCluster        string `url:"toCluster"`
@@ -727,7 +730,8 @@ type Replication struct {
 }
 
 // ReplicationSettings describes an XDCR replication settings as returned by
-//   GET /settings/replications/<remote UUID>/<local bucket>/<remote bucket>
+//
+//	GET /settings/replications/<remote UUID>/<local bucket>/<remote bucket>
 type ReplicationSettings struct {
 	CompressionType string `json:"compressionType" url:"compressionType,omitempty"`
 	PauseRequested  bool   `json:"pauseRequested" url:"pauseRequested"`

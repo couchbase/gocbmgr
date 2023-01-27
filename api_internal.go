@@ -10,6 +10,8 @@ import (
 	"github.com/couchbase/gocbmgr/urlencoding"
 )
 
+const version71Compatibility = 458753
+
 func (c *Couchbase) addNode(hostname, username, password string, services ServiceList) error {
 	data := url.Values{}
 	data.Set("hostname", hostname)
@@ -367,10 +369,61 @@ func (c *Couchbase) uploadClusterCACert(pem []byte) error {
 	return c.n_post("/controller/uploadClusterCA", pem, nil, headers)
 }
 
+func (c *Couchbase) getClusterCompatibility() (compat int, err error) {
+	info, err := c.getPoolsDefault()
+	if err != nil {
+		return
+	}
+	if len(info.Nodes) == 0 {
+		err = fmt.Errorf("no nodes found to get cluster compatibility")
+		return
+	}
+	compat = info.Nodes[0].ClusterCompatibility
+	return
+}
+
+func (c *Couchbase) getClusterCert71() (certs []TrustedCA, err error) {
+	certs = []TrustedCA{}
+	err = c.n_get("/pools/default/trustedCAs", &certs, c.defaultHeaders())
+	return
+}
+
 func (c *Couchbase) getClusterCACert() ([]byte, error) {
+	certs, err := c.getClusterCACertAll()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(certs) == 0 {
+		err = fmt.Errorf("no certificates found")
+		return nil, err
+	}
+
+	return []byte(certs[len(certs)-1].PEM), nil
+}
+
+func (c *Couchbase) getClusterCACertAll() (certs []TrustedCA, err error) {
+	compat, err := c.getClusterCompatibility()
+	if err != nil {
+		return nil, err
+	}
+
+	if compat >= version71Compatibility {
+		cert, err := c.getClusterCert71()
+		if err != nil {
+			return nil, err
+		}
+		return cert, nil
+	}
+
 	var cert string
-	err := c.n_get("/pools/default/certificate", &cert, c.defaultHeaders())
-	return []byte(cert), err
+	err = c.n_get("/pools/default/certificate", &cert, c.defaultHeaders())
+	if err != nil {
+		return
+	}
+	return []TrustedCA{
+		{PEM: cert},
+	}, err
 }
 
 func (c *Couchbase) reloadNodeCert() error {
